@@ -43,10 +43,21 @@ class JobService:
             raise NotFoundError(f"unknown execution job: {job_id}")
         return job
 
-    def list(self, *, status: str | None = None, limit: int = 100, offset: int = 0) -> list[ExecutionJob]:
+    def list(
+        self,
+        *,
+        status: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[ExecutionJob]:
         safe_limit = min(max(limit, 1), 500)
         safe_offset = max(offset, 0)
-        stmt = select(ExecutionJob).order_by(ExecutionJob.created_at.desc()).limit(safe_limit).offset(safe_offset)
+        stmt = (
+            select(ExecutionJob)
+            .order_by(ExecutionJob.created_at.desc())
+            .limit(safe_limit)
+            .offset(safe_offset)
+        )
         if status is not None:
             stmt = stmt.where(ExecutionJob.status == status)
         return list(self.session.scalars(stmt))
@@ -65,7 +76,9 @@ class JobService:
         if tool_call.status != "authorized":
             raise IntakeError(f"tool call is not authorized: {tool_call.status}")
 
-        existing = self.session.scalar(select(ExecutionJob).where(ExecutionJob.tool_call_id == tool_call_id))
+        existing = self.session.scalar(
+            select(ExecutionJob).where(ExecutionJob.tool_call_id == tool_call_id)
+        )
         if existing is not None:
             return existing
 
@@ -145,25 +158,35 @@ class JobService:
         self.session.refresh(job)
         return job
 
-    def complete(self, job_id: str, *, worker_id: str, result: dict[str, object]) -> ExecutionJob:
+    def complete(
+        self,
+        job_id: str,
+        *,
+        worker_id: str,
+        result: dict[str, object],
+    ) -> ExecutionJob:
         job = self.get(job_id)
         if job.leased_by != worker_id:
             raise IntakeError("job is not leased by this worker")
-        job.status = "completed"
-        job.result_json = result
-        job.error = None
+
+        cancelled = job.cancel_requested
+        job.status = "cancelled" if cancelled else "completed"
+        job.result_json = {} if cancelled else result
+        job.error = "cancelled while running" if cancelled else None
         job.finished_at = utcnow()
+        job.leased_by = None
         job.leased_until = None
 
         tool_call = self.session.get(ToolCall, job.tool_call_id)
         if tool_call is not None:
-            tool_call.status = "completed"
+            tool_call.status = job.status
+            tool_call.worker_id = None
 
         self._audit(
             actor=worker_id,
             action="job.complete",
             subject=job.id,
-            outcome="completed",
+            outcome=job.status,
             metadata={"tool_call_id": job.tool_call_id},
         )
         self.session.commit()
@@ -193,7 +216,11 @@ class JobService:
             action="job.fail",
             subject=job.id,
             outcome=job.status,
-            metadata={"tool_call_id": job.tool_call_id, "attempt": job.attempts, "error": job.error},
+            metadata={
+                "tool_call_id": job.tool_call_id,
+                "attempt": job.attempts,
+                "error": job.error,
+            },
         )
         self.session.commit()
         self.session.refresh(job)
