@@ -61,7 +61,7 @@ dev = [
 ]
 
 [project.scripts]
-intake = "intake.cli:app"
+intake = "intake.release_cli:app"
 intake-worker = "intake.worker:main"
 
 [tool.hatch.build.targets.wheel]
