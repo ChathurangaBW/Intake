@@ -5,6 +5,7 @@ This directory is the GitHub Pages source for Intake.
 Start with [`index.html`](index.html), then use these focused pages:
 
 - [`APP_CAPABILITIES.md`](APP_CAPABILITIES.md) — app capability boundaries
+- [`PROJECT_STATUS.md`](PROJECT_STATUS.md) — release maturity and stability boundary
 - [`QA.md`](QA.md) — QA plan and acceptance checklist
 - [`OPERATIONS.md`](OPERATIONS.md) — local run and operations guide
 - [`THREAT_MODEL.md`](THREAT_MODEL.md) — threat model and safety model
