@@ -47,9 +47,10 @@ class ToolCallResult:
 class IntakeService:
     """Runtime service layer for the Intake API and CLI.
 
-    This class intentionally keeps LLM/agent behavior outside the persistence
-    boundary. API and CLI handlers call this service with typed data; the service
-    persists state, enforces basic scope checks, calls OPA, and records outcomes.
+    API and CLI handlers call this service with typed data. The service persists
+    state, enforces basic scope checks, calls OPA, and records outcomes. The S3
+    evidence client is initialized lazily so DB-only commands and unit tests do
+    not need a running object store.
     """
 
     def __init__(
@@ -61,7 +62,13 @@ class IntakeService:
     ) -> None:
         self.session = session
         self.policy_client = policy_client or PolicyClient()
-        self.evidence_store = evidence_store or EvidenceStore()
+        self._evidence_store = evidence_store
+
+    @property
+    def evidence_store(self) -> EvidenceStore:
+        if self._evidence_store is None:
+            self._evidence_store = EvidenceStore()
+        return self._evidence_store
 
     def create_engagement(
         self,
