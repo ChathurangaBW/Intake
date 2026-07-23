@@ -35,6 +35,7 @@ jobs:
           test -f docs/APP_CAPABILITIES.md
           test -f docs/PROJECT_STATUS.md
           test -f docs/RELEASE_NOTES_1.0.0.md
+          test -f docs/OPERATOR_CONSOLE.md
           test -f docs/SECURITY_BOUNDARY.md
           test -f docs/SUPPLY_CHAIN.md
           test -f docs/PACKAGING.md

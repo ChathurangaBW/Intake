@@ -27,23 +27,53 @@ It is designed for authorized work only: reverse-engineering intake, artifact ha
 ## Core capabilities
 
 - FastAPI service with OpenAPI docs at `/docs`
-- Built-in web dashboard at `/ui`
+- Browser operator console at `/ui`
 - Optional API key authentication through `INTAKE_API_KEY`
 - Typer operator CLI
+- Python SDK client
 - PostgreSQL persistence through SQLAlchemy and Alembic
 - OPA/Rego policy decisions
 - MinIO/S3-compatible content-addressed evidence storage
 - Engagements, targets, artifacts, tool calls, approvals, audit logs, evidence, and findings
 - API artifact upload and CLI artifact ingestion
 - Tool catalog and tool availability endpoints
-- Authorized tool-call execution path
+- Authorized tool-call execution path and durable job layer
 - Safe local static-analysis worker for metadata and strings extraction
 - Optional fixed-argument Ghidra/Rizin execution path when explicitly enabled
 - Markdown report rendering
-- Docker Compose development stack
+- Operations control plane for readiness, audit export, evidence verification, and engagement export
+- Docker Compose development and production overlays
 - CI workflow, QA markers, API contract tests, and smoke workflow
 - GitHub Actions package publishing to GHCR
 - GitHub Pages documentation workflow
+
+## Operator console
+
+Run the app and open the workbench:
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+```text
+http://127.0.0.1:8000/ui
+```
+
+The console supports the normal local operator path from the browser:
+
+```text
+create engagement
+  -> add scoped target
+  -> upload artifact
+  -> propose tool call
+  -> approve or execute authorized work
+  -> store evidence
+  -> create finding
+  -> export report, audit log, and engagement metadata
+```
+
+If API-key auth is enabled, enter the key in the console header. The key is stored only in browser local storage.
 
 ## Guardrails
 
@@ -185,7 +215,9 @@ Documentation lives in [`docs/`](docs/) and is published by the GitHub Pages wor
 Start here:
 
 - [Documentation home](docs/index.html)
+- [Operator console](docs/OPERATOR_CONSOLE.md)
 - [Application capabilities](docs/APP_CAPABILITIES.md)
+- [Operations control plane](docs/OPERATIONS_CONTROL_PLANE.md)
 - [QA plan](docs/QA.md)
 - [Operations guide](docs/OPERATIONS.md)
 - [Threat model](docs/THREAT_MODEL.md)
@@ -234,7 +266,7 @@ docs/                         Documentation and GitHub Pages source
 src/intake/                   Python package
 src/intake/api.py             FastAPI app
 src/intake/auth.py            Optional API key auth
-src/intake/web.py             Built-in HTML dashboard
+src/intake/web.py             Browser operator console
 src/intake/cli.py             Operator CLI
 src/intake/services.py        Runtime application service layer
 src/intake/models.py          SQLAlchemy persistence models
@@ -245,7 +277,7 @@ src/intake/tools/             Typed tool wrappers
 src/intake/workers/           Static/dynamic worker contracts and static workers
 migrations/                   Alembic migrations
 policies/                     OPA/Rego policy
-examples/                     Example engagement manifest
+examples/                     Example engagement manifest, HTTP collection, SDK sample
 scripts/                      Smoke and helper scripts
 ```
 
