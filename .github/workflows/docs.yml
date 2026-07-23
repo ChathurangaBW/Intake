@@ -46,4 +46,4 @@ jobs:
           test -f docs/THREAT_MODEL.md
       - name: Reject stale release-candidate metadata
         run: |
-          ! grep -R "1.0.0rc1" pyproject.toml src/intake docs README.md CHANGELOG.md
+          ! grep -RE "1\.0\.0-?rc1" pyproject.toml src/intake docs README.md CHANGELOG.md
