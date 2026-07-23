@@ -75,8 +75,27 @@ class ToolCall(Base, TimestampMixin):
     operation: Mapped[str] = mapped_column(String(128))
     risk: Mapped[str] = mapped_column(String(64))
     request_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
-    status: Mapped[str] = mapped_column(String(32), default="proposed")
+    status: Mapped[str] = mapped_column(String(32), default="proposed", index=True)
     worker_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+
+
+class ExecutionJob(Base, TimestampMixin):
+    __tablename__ = "execution_jobs"
+    __table_args__ = (UniqueConstraint("tool_call_id", name="uq_execution_job_tool_call"),)
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=uuid_str)
+    tool_call_id: Mapped[str] = mapped_column(ForeignKey("tool_calls.id", ondelete="CASCADE"), index=True)
+    status: Mapped[str] = mapped_column(String(32), default="queued", index=True)
+    priority: Mapped[int] = mapped_column(Integer, default=100, index=True)
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    max_attempts: Mapped[int] = mapped_column(Integer, default=3)
+    leased_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    leased_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False)
+    result_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class PolicyDecisionRecord(Base, TimestampMixin):
