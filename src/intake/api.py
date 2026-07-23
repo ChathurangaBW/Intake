@@ -6,6 +6,7 @@ from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, Respo
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
+from intake import __version__
 from intake.auth import install_api_key_auth, principal_from_request
 from intake.config import settings
 from intake.db import get_session
@@ -46,7 +47,7 @@ from intake.web import render_dashboard, render_engagement
 
 app = FastAPI(
     title="Intake",
-    version="1.0.0-rc1",
+    version=__version__,
     description="Policy-gated security automation for authorized assessment workflows.",
 )
 install_api_key_auth(app)
@@ -199,7 +200,7 @@ async def upload_artifact(
         data = await file.read(settings.maximum_upload_bytes + 1)
         if len(data) > settings.maximum_upload_bytes:
             raise HTTPException(
-                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                status_code=status.HTTP_413_CONTENT_TOO_LARGE,
                 detail="artifact exceeds configured upload limit",
             )
         media_type = file.content_type or "application/octet-stream"
@@ -275,7 +276,12 @@ async def propose_tool_call(
         raise handle_error(error) from error
 
 
-@app.post("/tool-calls/{tool_call_id}/execute", response_model=ToolExecutionOut, tags=["tools"])
+@app.post(
+    "/tool-calls/{tool_call_id}/execute",
+    response_model=ToolExecutionOut,
+    tags=["tools"],
+    deprecated=True,
+)
 async def execute_tool_call(
     tool_call_id: str,
     service: IntakeService = Depends(service_dep),
@@ -375,7 +381,7 @@ def download_evidence(evidence_id: str, service: IntakeService = Depends(service
             media_type=evidence.media_type,
             headers={
                 "Content-Disposition": f'attachment; filename="{evidence.id}"',
-                "Digest": f"sha-256={evidence.sha256}",
+                "X-Content-SHA256": evidence.sha256,
             },
         )
     except Exception as error:  # noqa: BLE001
