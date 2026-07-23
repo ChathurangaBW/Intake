@@ -1,7 +1,14 @@
 from __future__ import annotations
 
+import tempfile
+from pathlib import Path
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def default_ghidra_project_root() -> str:
+    return str(Path(tempfile.gettempdir()) / "intake-ghidra")
 
 
 class Settings(BaseSettings):
@@ -14,7 +21,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="INTAKE_", env_file=".env", extra="ignore")
 
     env: str = "development"
-    database_url: str = "postgresql://intake:intake@localhost:5432/intake"
+    database_url: str = "postgresql+psycopg://intake:intake@localhost:5432/intake"
     database_pool_size: int = Field(default=10, ge=1, le=100)
     database_max_overflow: int = Field(default=20, ge=0, le=200)
 
@@ -49,7 +56,7 @@ class Settings(BaseSettings):
     enable_external_static_tools: bool = False
     rizin_path: str = "rizin"
     ghidra_analyze_headless_path: str = "analyzeHeadless"
-    ghidra_project_root: str = "/tmp/intake-ghidra"
+    ghidra_project_root: str = Field(default_factory=default_ghidra_project_root)
     external_tool_output_limit_bytes: int = 262144
     worker_poll_interval_seconds: float = Field(default=1.0, ge=0.1, le=60.0)
     job_lease_seconds: int = Field(default=900, ge=30, le=86400)
