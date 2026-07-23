@@ -1,8 +1,11 @@
 from pathlib import Path
 
+import pytest
+
 from intake.evidence import make_evidence_record
 
 
+@pytest.mark.unit
 def test_make_evidence_record(tmp_path: Path) -> None:
     sample = tmp_path / "sample.bin"
     sample.write_bytes(b"intake")

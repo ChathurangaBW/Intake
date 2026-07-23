@@ -33,6 +33,7 @@ orchestration = [
 ]
 dev = [
   "pytest>=8.2",
+  "pytest-cov>=5.0",
   "ruff>=0.6",
   "mypy>=1.11"
 ]
@@ -52,3 +53,10 @@ ignore = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "--strict-markers"
+markers = [
+  "unit: fast unit tests for pure or narrow components",
+  "contract: API and CLI contract tests using fakes/mocks",
+  "integration: tests requiring external services such as Postgres, OPA, MinIO, or Docker Compose",
+  "smoke: end-to-end smoke checks for a running app"
+]
