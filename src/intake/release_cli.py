@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import json
+import subprocess
+from pathlib import Path
+
 import typer
 
 from intake.cli import _echo_json, app, evidence_app, finding_app
@@ -11,6 +15,53 @@ from intake.runtime_schemas import finding_out
 
 job_app = typer.Typer(help="Manage durable execution jobs")
 app.add_typer(job_app, name="job")
+
+
+@app.command("init")
+def init_env(
+    output: Path = typer.Option(Path(".env"), "--output", "-o"),
+    force: bool = typer.Option(False, "--force"),
+) -> None:
+    """Create a local environment file from the production-safe example."""
+    if output.exists() and not force:
+        raise typer.BadParameter(f"{output} already exists; use --force to overwrite")
+    source = Path("examples/env/production.env.example")
+    if not source.exists():
+        source = Path(".env.example")
+    output.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+    typer.echo(f"wrote {output}")
+
+
+@app.command("demo")
+def seed_demo() -> None:
+    """Seed a harmless local demo engagement."""
+    subprocess.run(["python", "scripts/seed_demo.py"], check=True)
+
+
+@app.command("release-info")
+def release_info() -> None:
+    """Print the release manifest."""
+    manifest = Path("release/manifest-1.0.0.json")
+    if not manifest.exists():
+        raise typer.BadParameter("release manifest not found")
+    typer.echo(json.dumps(json.loads(manifest.read_text(encoding="utf-8")), indent=2))
+
+
+@app.command("doctor-full")
+def doctor_full() -> None:
+    """Check local operator prerequisites."""
+    checks = {
+        "docker-compose": ["docker", "compose", "version"],
+        "python": ["python", "--version"],
+    }
+    result: dict[str, str] = {}
+    for name, command in checks.items():
+        try:
+            completed = subprocess.run(command, check=True, capture_output=True, text=True)
+            result[name] = (completed.stdout or completed.stderr).strip()
+        except Exception as error:  # noqa: BLE001 - diagnostic command
+            result[name] = f"missing or failed: {error}"
+    typer.echo(json.dumps(result, indent=2))
 
 
 @job_app.command("enqueue")

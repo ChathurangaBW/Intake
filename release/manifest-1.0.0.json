@@ -1,0 +1,43 @@
+{
+  "name": "Intake",
+  "version": "1.0.0",
+  "status": "local-first release candidate",
+  "repository": "https://github.com/ChathurangaBW/Intake",
+  "container": "ghcr.io/chathurangabw/intake",
+  "python_package": "intake-security",
+  "entrypoints": {
+    "api": "intake.api:app",
+    "cli": "intake",
+    "worker": "intake-worker"
+  },
+  "runtime_services": [
+    "FastAPI",
+    "PostgreSQL",
+    "OPA",
+    "MinIO"
+  ],
+  "operator_surfaces": [
+    "Web dashboard",
+    "OpenAPI docs",
+    "Typer CLI",
+    "Python SDK",
+    "HTTP request collection"
+  ],
+  "qa_gates": [
+    "ruff lint",
+    "unit tests",
+    "contract tests",
+    "security checks",
+    "compose smoke test",
+    "docker image build"
+  ],
+  "blocked_defaults": [
+    "unrestricted shell execution",
+    "exploit automation",
+    "evasion",
+    "persistence",
+    "destructive actions",
+    "unscoped active network operations",
+    "autonomous dynamic execution"
+  ]
+}
