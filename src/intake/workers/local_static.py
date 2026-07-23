@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from collections import Counter
 
@@ -79,7 +80,7 @@ class LocalStaticWorkerClient(StaticWorkerClient):
             "top_bytes": top_bytes,
             "worker_boundary": "local-static-read-only",
         }
-        report_bytes = (str(report) + "\n").encode("utf-8")
+        report_bytes = (json.dumps(report, indent=2, sort_keys=True) + "\n").encode("utf-8")
         stored = self.evidence_store.put_bytes(report_bytes, media_type="application/json")
         evidence = Evidence(
             engagement_id=artifact.engagement_id,
