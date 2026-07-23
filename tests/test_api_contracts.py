@@ -30,6 +30,7 @@ class Row:
     actor: str = "qa"
     tool: str = "ghidra"
     operation: str = "analyze"
+    tool_call_id: str = "tool-1"
     risk: str = "read_only"
     request_json: dict[str, Any] = field(default_factory=dict)
     requested_by: str = "qa"
@@ -115,7 +116,12 @@ class FakeService:
     async def execute_tool_call(self, tool_call_id: str) -> Any:
         class Result:
             def model_dump(self, mode: str = "json") -> dict[str, Any]:
-                return {"status": "completed", "summary": tool_call_id, "evidence_ids": [], "data": {}}
+                return {
+                    "status": "completed",
+                    "summary": tool_call_id,
+                    "evidence_ids": [],
+                    "data": {},
+                }
 
         return Result()
 

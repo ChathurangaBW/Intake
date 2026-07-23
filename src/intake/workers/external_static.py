@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import shutil
-import subprocess
+import subprocess  # nosec B404 - only fixed argv vectors are executed inside this adapter
 import tempfile
 from pathlib import Path
 
@@ -111,12 +111,15 @@ class HybridStaticWorkerClient(StaticWorkerClient):
         tool_name: str,
         timeout_seconds: int,
     ) -> StaticWorkerResult:
-        completed = subprocess.run(
+        # The executable path must resolve through shutil.which before reaching
+        # this method, argv is constructed internally, and shell=False is used.
+        completed = subprocess.run(  # nosec B603 B607
             argv,
             check=False,
             capture_output=True,
             text=True,
             timeout=timeout_seconds,
+            shell=False,
         )
         stdout = completed.stdout[-settings.external_tool_output_limit_bytes :]
         stderr = completed.stderr[-settings.external_tool_output_limit_bytes :]
@@ -140,7 +143,11 @@ class HybridStaticWorkerClient(StaticWorkerClient):
             size_bytes=stored.size_bytes,
             storage_uri=stored.storage_uri,
             summary=f"{tool_name} static analysis output for artifact {artifact.id}",
-            metadata_={"worker_id": request.worker_id, "profile": request.profile, "returncode": completed.returncode},
+            metadata_={
+                "worker_id": request.worker_id,
+                "profile": request.profile,
+                "returncode": completed.returncode,
+            },
         )
         self.session.add(evidence)
         self.session.commit()
@@ -151,5 +158,7 @@ class HybridStaticWorkerClient(StaticWorkerClient):
             tool_call_id=request.tool_call_id,
             status=status,
             summary=f"{tool_name} static analysis {status} for {artifact.id}",
-            evidence=[{"id": evidence.id, "sha256": evidence.sha256, "storage_uri": evidence.storage_uri}],
+            evidence=[
+                {"id": evidence.id, "sha256": evidence.sha256, "storage_uri": evidence.storage_uri}
+            ],
         )

@@ -1,3 +1,22 @@
+x-intake-environment: &intake-environment
+  INTAKE_ENV: ${INTAKE_ENV:-development}
+  INTAKE_DATABASE_URL: postgresql+psycopg://intake:intake@postgres:5432/intake
+  INTAKE_OBJECT_STORE_ENDPOINT: http://minio:9000
+  INTAKE_OBJECT_STORE_BUCKET: intake-evidence
+  INTAKE_OBJECT_STORE_ACCESS_KEY: intake
+  INTAKE_OBJECT_STORE_SECRET_KEY: intake-dev-password
+  INTAKE_OPA_URL: http://opa:8181/v1/data/intake/decision
+  INTAKE_OPA_HEALTH_URL: http://opa:8181/health
+  INTAKE_API_KEY: ${INTAKE_API_KEY:-}
+  INTAKE_API_KEYS: "${INTAKE_API_KEYS_JSON:-{}}"
+  INTAKE_ENABLE_WEB_UI: ${INTAKE_ENABLE_WEB_UI:-true}
+  INTAKE_MAXIMUM_REQUEST_BYTES: ${INTAKE_MAXIMUM_REQUEST_BYTES:-16777216}
+  INTAKE_MAXIMUM_UPLOAD_BYTES: ${INTAKE_MAXIMUM_UPLOAD_BYTES:-67108864}
+  INTAKE_ENABLE_EXTERNAL_STATIC_TOOLS: ${INTAKE_ENABLE_EXTERNAL_STATIC_TOOLS:-false}
+  INTAKE_RIZIN_PATH: ${INTAKE_RIZIN_PATH:-rizin}
+  INTAKE_GHIDRA_ANALYZE_HEADLESS_PATH: ${INTAKE_GHIDRA_ANALYZE_HEADLESS_PATH:-analyzeHeadless}
+  INTAKE_GHIDRA_PROJECT_ROOT: /tmp/intake-ghidra
+
 services:
   postgres:
     image: postgres:16
@@ -14,6 +33,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    restart: unless-stopped
 
   opa:
     image: openpolicyagent/opa:latest
@@ -22,6 +42,7 @@ services:
       - "8181:8181"
     volumes:
       - ./policies:/policies:ro
+    restart: unless-stopped
 
   minio:
     image: minio/minio:latest
@@ -34,22 +55,12 @@ services:
       - "9001:9001"
     volumes:
       - minio:/data
+    restart: unless-stopped
 
   api:
     build: .
     environment:
-      INTAKE_DATABASE_URL: postgresql://intake:intake@postgres:5432/intake
-      INTAKE_OBJECT_STORE_ENDPOINT: http://minio:9000
-      INTAKE_OBJECT_STORE_BUCKET: intake-evidence
-      INTAKE_OBJECT_STORE_ACCESS_KEY: intake
-      INTAKE_OBJECT_STORE_SECRET_KEY: intake-dev-password
-      INTAKE_OPA_URL: http://opa:8181/v1/data/intake/decision
-      INTAKE_API_KEY: ${INTAKE_API_KEY:-}
-      INTAKE_ENABLE_WEB_UI: ${INTAKE_ENABLE_WEB_UI:-true}
-      INTAKE_ENABLE_EXTERNAL_STATIC_TOOLS: ${INTAKE_ENABLE_EXTERNAL_STATIC_TOOLS:-false}
-      INTAKE_RIZIN_PATH: ${INTAKE_RIZIN_PATH:-rizin}
-      INTAKE_GHIDRA_ANALYZE_HEADLESS_PATH: ${INTAKE_GHIDRA_ANALYZE_HEADLESS_PATH:-analyzeHeadless}
-      INTAKE_GHIDRA_PROJECT_ROOT: /tmp/intake-ghidra
+      <<: *intake-environment
     ports:
       - "8000:8000"
     depends_on:
@@ -59,6 +70,30 @@ services:
         condition: service_started
       opa:
         condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=4)",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+    restart: unless-stopped
+
+  worker:
+    build: .
+    command: ["python", "-m", "intake.worker"]
+    environment:
+      <<: *intake-environment
+      INTAKE_SKIP_MIGRATIONS: "true"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   pgdata:

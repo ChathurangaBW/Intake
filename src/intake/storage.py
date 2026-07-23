@@ -6,6 +6,7 @@ from pathlib import Path
 
 import boto3
 from botocore.client import Config
+from botocore.exceptions import ClientError
 
 from intake.config import settings
 
@@ -16,6 +17,20 @@ class StoredObject:
     size_bytes: int
     storage_uri: str
     key: str
+
+
+@dataclass(frozen=True)
+class IntegrityResult:
+    expected_sha256: str
+    actual_sha256: str
+    expected_size_bytes: int | None
+    actual_size_bytes: int
+    digest_matches: bool
+    size_matches: bool
+
+    @property
+    def valid(self) -> bool:
+        return self.digest_matches and self.size_matches
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -37,14 +52,23 @@ class EvidenceStore:
             aws_access_key_id=settings.object_store_access_key,
             aws_secret_access_key=settings.object_store_secret_key,
             region_name=settings.object_store_region,
-            config=Config(signature_version="s3v4"),
+            config=Config(signature_version="s3v4", connect_timeout=3, read_timeout=10),
             use_ssl=settings.object_store_secure,
         )
 
     def ensure_bucket(self) -> None:
-        buckets = self.client.list_buckets().get("Buckets", [])
-        if not any(bucket.get("Name") == self.bucket for bucket in buckets):
-            self.client.create_bucket(Bucket=self.bucket)
+        try:
+            self.client.head_bucket(Bucket=self.bucket)
+            return
+        except ClientError as error:
+            code = str(error.response.get("Error", {}).get("Code", ""))
+            if code not in {"404", "NoSuchBucket", "NotFound"}:
+                raise
+        self.client.create_bucket(Bucket=self.bucket)
+
+    def check(self) -> None:
+        self.ensure_bucket()
+        self.client.head_bucket(Bucket=self.bucket)
 
     def put_bytes(self, data: bytes, media_type: str = "application/octet-stream") -> StoredObject:
         digest = sha256_bytes(data)
@@ -71,3 +95,16 @@ class EvidenceStore:
         key = evidence_key(digest)
         response = self.client.get_object(Bucket=self.bucket, Key=key)
         return response["Body"].read()
+
+    def verify(self, digest: str, expected_size_bytes: int | None = None) -> IntegrityResult:
+        data = self.get_bytes(digest)
+        actual_digest = sha256_bytes(data)
+        actual_size = len(data)
+        return IntegrityResult(
+            expected_sha256=digest,
+            actual_sha256=actual_digest,
+            expected_size_bytes=expected_size_bytes,
+            actual_size_bytes=actual_size,
+            digest_matches=actual_digest == digest,
+            size_matches=expected_size_bytes is None or actual_size == expected_size_bytes,
+        )

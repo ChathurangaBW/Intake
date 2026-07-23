@@ -1,6 +1,8 @@
 #!/usr/bin/env sh
 set -eu
 
-alembic upgrade head
+if [ "${INTAKE_SKIP_MIGRATIONS:-false}" != "true" ]; then
+  alembic upgrade head
+fi
 
 exec "$@"
