@@ -6,27 +6,32 @@ The project is built around this rule:
 
 > The model proposes. Policy decides. Isolated workers execute. Evidence proves. A human authorizes sensitive actions.
 
-## What works now
+## Current app capability
 
-This is no longer only an architecture scaffold. The repository includes a runnable API and CLI with:
+Intake is now a runnable local application, not just an architecture scaffold. It includes:
 
-- FastAPI service
+- FastAPI service with OpenAPI docs
+- Built-in web dashboard at `/ui`
+- Optional API key authentication through `INTAKE_API_KEY`
 - Typer operator CLI
 - PostgreSQL persistence through SQLAlchemy and Alembic
 - OPA/Rego policy decisions
 - MinIO/S3-compatible content-addressed evidence storage
-- Engagements, targets, artifacts, tool calls, approvals, evidence, and findings
+- Engagements, targets, artifacts, tool calls, approvals, audit logs, evidence, and findings
 - API artifact upload and CLI artifact ingestion
+- Tool catalog and tool availability endpoints
 - Authorized tool-call execution path
 - Safe local static-analysis worker for metadata and strings extraction
-- Ghidra/Rizin tool contracts routed through the worker boundary
+- Optional fixed-argument Ghidra/Rizin execution path when the operator enables external tools
 - Markdown report rendering
 - Docker Compose development stack
 - CI workflow and tests
 
-## What is intentionally not included
+## Guardrails
 
-Intake does **not** expose unrestricted shell execution, exploit automation, persistence, evasion, destructive actions, or unscopeable network activity. Dynamic execution and active network operations remain approval-gated design areas.
+Intake does not expose unrestricted shell execution. It exposes typed, scoped tool contracts. Dynamic execution and active network actions are policy-gated and not auto-run by the default runtime.
+
+This is a deliberate product boundary, not an unfinished placeholder. The included app performs authorized intake, artifact handling, policy decisions, approval workflow, safe static analysis, evidence storage, audit logging, and reporting.
 
 ## Quick start
 
@@ -47,6 +52,12 @@ OpenAPI docs:
 http://127.0.0.1:8000/docs
 ```
 
+Web dashboard:
+
+```text
+http://127.0.0.1:8000/ui
+```
+
 The API container runs Alembic migrations on startup.
 
 ## Local CLI setup
@@ -60,7 +71,22 @@ alembic upgrade head
 intake doctor
 ```
 
-## Example workflow
+## Recommended local security setting
+
+Set an API key before exposing the service beyond localhost:
+
+```bash
+export INTAKE_API_KEY='change-this-long-random-value'
+docker compose up --build
+```
+
+Then send API requests with:
+
+```bash
+-H 'X-Intake-Api-Key: change-this-long-random-value'
+```
+
+## Example CLI workflow
 
 Create an engagement:
 
@@ -80,6 +106,12 @@ Ingest a local artifact:
 intake artifact ingest eng-demo ./sample.bin
 ```
 
+Check tool availability:
+
+```bash
+intake tool status
+```
+
 Propose a read-only static analysis tool call:
 
 ```bash
@@ -92,16 +124,28 @@ Execute it after the policy marks it `authorized`:
 intake tool execute <tool-call-id>
 ```
 
+List evidence:
+
+```bash
+intake evidence list eng-demo
+```
+
 Create a finding:
 
 ```bash
-intake finding create eng-demo "Finding title" "Evidence-backed description" informational
+intake finding create eng-demo "Finding title" "Evidence-backed description" informational '["<evidence-id>"]'
 ```
 
 Render a report:
 
 ```bash
 intake finding report eng-demo --output report.md
+```
+
+Inspect audit logs:
+
+```bash
+intake audit list
 ```
 
 ## API workflow
@@ -121,6 +165,12 @@ curl -s http://127.0.0.1:8000/engagements/eng-demo/artifacts \
   -F 'file=@./sample.bin;type=application/octet-stream'
 ```
 
+List tool status:
+
+```bash
+curl -s http://127.0.0.1:8000/tools/status
+```
+
 Propose a tool call:
 
 ```bash
@@ -135,26 +185,45 @@ Execute an authorized tool call:
 curl -s -X POST http://127.0.0.1:8000/tool-calls/<tool-call-id>/execute
 ```
 
+Download evidence:
+
+```bash
+curl -s http://127.0.0.1:8000/evidence/<evidence-id>/download -o evidence.json
+```
+
 Render report:
 
 ```bash
 curl -s http://127.0.0.1:8000/engagements/eng-demo/report.md
 ```
 
+## Enabling real Ghidra/Rizin execution
+
+By default, Intake uses its safe built-in metadata and string extraction worker. To use installed Ghidra/Rizin binaries, enable fixed-argument external static tools:
+
+```bash
+export INTAKE_ENABLE_EXTERNAL_STATIC_TOOLS=true
+export INTAKE_RIZIN_PATH=rizin
+export INTAKE_GHIDRA_ANALYZE_HEADLESS_PATH=analyzeHeadless
+```
+
+The external execution path uses fixed argument vectors, not arbitrary shell strings. If a binary is missing, Intake falls back to the built-in safe static worker.
+
 ## Repository layout
 
 ```text
 src/intake/                  Python package
 src/intake/api.py            FastAPI app
+src/intake/auth.py           Optional API key auth
+src/intake/web.py            Built-in HTML dashboard
 src/intake/cli.py            Operator CLI
 src/intake/services.py       Runtime application service layer
 src/intake/models.py         SQLAlchemy persistence models
 src/intake/storage.py        Content-addressed evidence store
 src/intake/tool_runtime.py   Default constrained tool registry
-src/intake/tool_broker.py    Policy-gated tool execution path
 src/intake/scope.py          Engagement scope validation
 src/intake/tools/            Typed tool wrappers
-src/intake/workers/          Static/dynamic worker contracts and local static worker
+src/intake/workers/          Static/dynamic worker contracts and static workers
 src/intake/orchestration/    Workflow state-machine skeleton
 migrations/                  Alembic migrations
 policies/                    OPA/Rego policy

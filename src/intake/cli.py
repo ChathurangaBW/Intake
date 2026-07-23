@@ -11,7 +11,15 @@ import yaml
 from intake.db import SessionLocal
 from intake.evidence import make_evidence_record
 from intake.reporting import render_markdown_report
-from intake.runtime_schemas import artifact_out, engagement_out, finding_out, target_out, tool_call_out
+from intake.runtime_schemas import (
+    artifact_out,
+    audit_log_out,
+    engagement_out,
+    evidence_out,
+    finding_out,
+    target_out,
+    tool_call_out,
+)
 from intake.schemas import RiskLevel, ToolCallRequest
 from intake.services import IntakeService
 
@@ -20,19 +28,23 @@ engagement_app = typer.Typer(help="Create and inspect engagements")
 target_app = typer.Typer(help="Manage scoped targets")
 artifact_app = typer.Typer(help="Ingest and list artifacts")
 tool_app = typer.Typer(help="Propose, approve, and execute policy-gated tool calls")
+evidence_app = typer.Typer(help="Inspect and export evidence")
 finding_app = typer.Typer(help="Record and report findings")
+audit_app = typer.Typer(help="Inspect audit events")
 
 app.add_typer(engagement_app, name="engagement")
 app.add_typer(target_app, name="target")
 app.add_typer(artifact_app, name="artifact")
 app.add_typer(tool_app, name="tool")
+app.add_typer(evidence_app, name="evidence")
 app.add_typer(finding_app, name="finding")
+app.add_typer(audit_app, name="audit")
 
 
 def _echo_json(value: Any) -> None:
     if hasattr(value, "model_dump"):
         value = value.model_dump(mode="json")
-    typer.echo(json.dumps(value, indent=2, sort_keys=True))
+    typer.echo(json.dumps(value, indent=2, sort_keys=True, default=str))
 
 
 def _load_manifest(path: Path | None) -> dict[str, Any]:
@@ -57,6 +69,14 @@ def serve(host: str = "127.0.0.1", port: int = 8000, reload: bool = False) -> No
     import uvicorn
 
     uvicorn.run("intake.api:app", host=host, port=port, reload=reload)
+
+
+@app.command()
+def stats() -> None:
+    """Print dashboard statistics."""
+    with SessionLocal() as session:
+        service = IntakeService(session)
+        _echo_json(service.dashboard_stats())
 
 
 @app.command()
@@ -96,19 +116,11 @@ def list_engagements() -> None:
 
 
 @target_app.command("add")
-def add_target(
-    engagement_id: str,
-    target_ref: str,
-    target_type: str = "domain",
-) -> None:
+def add_target(engagement_id: str, target_ref: str, target_type: str = "domain") -> None:
     """Add an explicitly authorized target to an engagement."""
     with SessionLocal() as session:
         service = IntakeService(session)
-        row = service.add_target(
-            engagement_id=engagement_id,
-            target_ref=target_ref,
-            target_type=target_type,
-        )
+        row = service.add_target(engagement_id=engagement_id, target_ref=target_ref, target_type=target_type)
         _echo_json(target_out(row))
 
 
@@ -132,12 +144,7 @@ def ingest_artifact(
         raise typer.BadParameter(f"Not a file: {path}")
     with SessionLocal() as session:
         service = IntakeService(session)
-        row = service.ingest_artifact(
-            engagement_id=engagement_id,
-            path=path,
-            media_type=media_type,
-            source=source,
-        )
+        row = service.ingest_artifact(engagement_id=engagement_id, path=path, media_type=media_type, source=source)
         _echo_json(artifact_out(row))
 
 
@@ -147,6 +154,22 @@ def list_artifacts(engagement_id: str) -> None:
     with SessionLocal() as session:
         service = IntakeService(session)
         _echo_json([artifact_out(row).model_dump(mode="json") for row in service.list_artifacts(engagement_id)])
+
+
+@tool_app.command("catalog")
+def tool_catalog() -> None:
+    """List supported typed tools."""
+    with SessionLocal() as session:
+        service = IntakeService(session)
+        _echo_json(service.list_tools())
+
+
+@tool_app.command("status")
+def tool_status() -> None:
+    """Show worker/tool availability."""
+    with SessionLocal() as session:
+        service = IntakeService(session)
+        _echo_json(service.tool_status())
 
 
 @tool_app.command("propose")
@@ -212,17 +235,31 @@ def list_tool_calls(engagement_id: str) -> None:
         _echo_json([tool_call_out(row).model_dump(mode="json") for row in service.list_tool_calls(engagement_id)])
 
 
+@tool_app.command("pending")
+def pending_approvals() -> None:
+    """List pending approvals."""
+    with SessionLocal() as session:
+        service = IntakeService(session)
+        _echo_json(
+            [
+                {
+                    "id": row.id,
+                    "tool_call_id": row.tool_call_id,
+                    "status": row.status,
+                    "requested_by": row.requested_by,
+                    "reason": row.reason,
+                }
+                for row in service.list_pending_approvals()
+            ]
+        )
+
+
 @tool_app.command("approve")
 def approve_tool_call(approval_id: str, decided_by: str, reason: str | None = None) -> None:
     """Approve a pending gated tool call."""
     with SessionLocal() as session:
         service = IntakeService(session)
-        row = service.decide_approval(
-            approval_id,
-            approved=True,
-            decided_by=decided_by,
-            reason=reason,
-        )
+        row = service.decide_approval(approval_id, approved=True, decided_by=decided_by, reason=reason)
         _echo_json({"id": row.id, "status": row.status, "tool_call_id": row.tool_call_id})
 
 
@@ -231,13 +268,26 @@ def reject_tool_call(approval_id: str, decided_by: str, reason: str | None = Non
     """Reject a pending gated tool call."""
     with SessionLocal() as session:
         service = IntakeService(session)
-        row = service.decide_approval(
-            approval_id,
-            approved=False,
-            decided_by=decided_by,
-            reason=reason,
-        )
+        row = service.decide_approval(approval_id, approved=False, decided_by=decided_by, reason=reason)
         _echo_json({"id": row.id, "status": row.status, "tool_call_id": row.tool_call_id})
+
+
+@evidence_app.command("list")
+def list_evidence(engagement_id: str) -> None:
+    """List evidence records for an engagement."""
+    with SessionLocal() as session:
+        service = IntakeService(session)
+        _echo_json([evidence_out(row).model_dump(mode="json") for row in service.list_evidence(engagement_id)])
+
+
+@evidence_app.command("download")
+def download_evidence(evidence_id: str, output: Path) -> None:
+    """Download evidence bytes from content-addressed object storage."""
+    with SessionLocal() as session:
+        service = IntakeService(session)
+        _, data = service.get_evidence_bytes(evidence_id)
+        output.write_bytes(data)
+        typer.echo(str(output))
 
 
 @finding_app.command("create")
@@ -246,8 +296,16 @@ def create_finding(
     title: str,
     description: str,
     severity: str = "informational",
+    evidence_ids_json: str = "[]",
 ) -> None:
     """Create a draft finding."""
+    try:
+        evidence_ids = json.loads(evidence_ids_json)
+    except json.JSONDecodeError as error:
+        raise typer.BadParameter(f"invalid evidence JSON: {error}") from error
+    if not isinstance(evidence_ids, list):
+        raise typer.BadParameter("evidence_ids_json must decode to a list")
+
     with SessionLocal() as session:
         service = IntakeService(session)
         row = service.create_finding(
@@ -255,6 +313,7 @@ def create_finding(
             title=title,
             description=description,
             severity=severity,
+            evidence_ids=evidence_ids,
         )
         _echo_json(finding_out(row))
 
@@ -280,3 +339,11 @@ def report(engagement_id: str, output: Path | None = None) -> None:
         typer.echo(str(output))
     else:
         typer.echo(body)
+
+
+@audit_app.command("list")
+def list_audit(limit: int = 100) -> None:
+    """List recent audit events."""
+    with SessionLocal() as session:
+        service = IntakeService(session)
+        _echo_json([audit_log_out(row).model_dump(mode="json") for row in service.list_audit_logs(limit=limit)])

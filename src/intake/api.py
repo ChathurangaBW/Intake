@@ -3,14 +3,19 @@ from __future__ import annotations
 from collections.abc import Generator
 
 from fastapi import Depends, FastAPI, File, HTTPException, Response, UploadFile, status
+from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
+from intake.auth import install_api_key_auth
+from intake.config import settings
 from intake.db import get_session
 from intake.reporting import render_markdown_report
 from intake.runtime_schemas import (
     ApprovalDecision,
     ApprovalOut,
     ArtifactOut,
+    AuditLogOut,
+    DashboardStats,
     EngagementCreate,
     EngagementOut,
     EvidenceCreate,
@@ -22,8 +27,11 @@ from intake.runtime_schemas import (
     ToolCallOut,
     ToolCallProposeOut,
     ToolExecutionOut,
+    ToolSpecOut,
+    ToolStatusOut,
     approval_out,
     artifact_out,
+    audit_log_out,
     engagement_out,
     evidence_out,
     finding_out,
@@ -32,8 +40,10 @@ from intake.runtime_schemas import (
 )
 from intake.schemas import ToolCallDecision, ToolCallRequest
 from intake.services import IntakeError, IntakeService, NotFoundError, ScopeError
+from intake.web import render_dashboard, render_engagement
 
-app = FastAPI(title="Intake", version="0.3.0")
+app = FastAPI(title="Intake", version="1.0.0")
+install_api_key_auth(app)
 
 
 def session_dep() -> Generator[Session, None, None]:
@@ -55,8 +65,27 @@ def handle_error(error: Exception) -> HTTPException:
 
 
 @app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+def health() -> dict[str, str | bool]:
+    return {"status": "ok", "auth_enabled": bool(settings.api_key)}
+
+
+@app.get("/ui", response_class=HTMLResponse)
+def ui_dashboard(session: Session = Depends(session_dep)) -> HTMLResponse:
+    if not settings.enable_web_ui:
+        raise HTTPException(status_code=404, detail="web UI is disabled")
+    return HTMLResponse(render_dashboard(session))
+
+
+@app.get("/ui/engagements/{engagement_id}", response_class=HTMLResponse)
+def ui_engagement(engagement_id: str, session: Session = Depends(session_dep)) -> HTMLResponse:
+    if not settings.enable_web_ui:
+        raise HTTPException(status_code=404, detail="web UI is disabled")
+    return HTMLResponse(render_engagement(session, engagement_id))
+
+
+@app.get("/stats", response_model=DashboardStats)
+def dashboard_stats(service: IntakeService = Depends(service_dep)) -> DashboardStats:
+    return DashboardStats(**service.dashboard_stats())
 
 
 @app.post("/engagements", response_model=EngagementOut, status_code=status.HTTP_201_CREATED)
@@ -67,6 +96,7 @@ def create_engagement(payload: EngagementCreate, service: IntakeService = Depend
             name=payload.name,
             classification=payload.classification,
             manifest=payload.manifest,
+            actor="api",
         )
         return engagement_out(row)
     except Exception as error:  # noqa: BLE001 - translated to HTTP boundary
@@ -87,17 +117,14 @@ def get_engagement(engagement_id: str, service: IntakeService = Depends(service_
 
 
 @app.post("/engagements/{engagement_id}/targets", response_model=TargetOut, status_code=status.HTTP_201_CREATED)
-def add_target(
-    engagement_id: str,
-    payload: TargetCreate,
-    service: IntakeService = Depends(service_dep),
-) -> TargetOut:
+def add_target(engagement_id: str, payload: TargetCreate, service: IntakeService = Depends(service_dep)) -> TargetOut:
     try:
         row = service.add_target(
             engagement_id=engagement_id,
             target_ref=payload.target_ref,
             target_type=payload.target_type,
             metadata=payload.metadata,
+            actor="api",
         )
         return target_out(row)
     except Exception as error:  # noqa: BLE001
@@ -127,6 +154,7 @@ async def upload_artifact(
             media_type=media_type,
             source="api-upload",
             metadata={"filename": file.filename},
+            actor="api",
         )
         return artifact_out(row)
     except Exception as error:  # noqa: BLE001
@@ -139,6 +167,16 @@ def list_artifacts(engagement_id: str, service: IntakeService = Depends(service_
         return [artifact_out(row) for row in service.list_artifacts(engagement_id)]
     except Exception as error:  # noqa: BLE001
         raise handle_error(error) from error
+
+
+@app.get("/tools", response_model=list[ToolSpecOut])
+def list_tools(service: IntakeService = Depends(service_dep)) -> list[ToolSpecOut]:
+    return [ToolSpecOut(**row) for row in service.list_tools()]
+
+
+@app.get("/tools/status", response_model=list[ToolStatusOut])
+def tools_status(service: IntakeService = Depends(service_dep)) -> list[ToolStatusOut]:
+    return [ToolStatusOut(**row) for row in service.tool_status()]
 
 
 @app.post("/authorize", response_model=ToolCallDecision)
@@ -168,10 +206,7 @@ async def propose_tool_call(
 
 
 @app.post("/tool-calls/{tool_call_id}/execute", response_model=ToolExecutionOut)
-async def execute_tool_call(
-    tool_call_id: str,
-    service: IntakeService = Depends(service_dep),
-) -> ToolExecutionOut:
+async def execute_tool_call(tool_call_id: str, service: IntakeService = Depends(service_dep)) -> ToolExecutionOut:
     try:
         result = await service.execute_tool_call(tool_call_id)
         return ToolExecutionOut(**result.model_dump(mode="json"))
@@ -187,12 +222,13 @@ def list_tool_calls(engagement_id: str, service: IntakeService = Depends(service
         raise handle_error(error) from error
 
 
+@app.get("/approvals/pending", response_model=list[ApprovalOut])
+def pending_approvals(service: IntakeService = Depends(service_dep)) -> list[ApprovalOut]:
+    return [approval_out(row) for row in service.list_pending_approvals()]
+
+
 @app.post("/approvals/{approval_id}/decision", response_model=ApprovalOut)
-def decide_approval(
-    approval_id: str,
-    payload: ApprovalDecision,
-    service: IntakeService = Depends(service_dep),
-) -> ApprovalOut:
+def decide_approval(approval_id: str, payload: ApprovalDecision, service: IntakeService = Depends(service_dep)) -> ApprovalOut:
     try:
         row = service.decide_approval(
             approval_id,
@@ -206,11 +242,7 @@ def decide_approval(
 
 
 @app.post("/engagements/{engagement_id}/evidence", response_model=EvidenceOut, status_code=status.HTTP_201_CREATED)
-def record_evidence(
-    engagement_id: str,
-    payload: EvidenceCreate,
-    service: IntakeService = Depends(service_dep),
-) -> EvidenceOut:
+def record_evidence(engagement_id: str, payload: EvidenceCreate, service: IntakeService = Depends(service_dep)) -> EvidenceOut:
     try:
         row = service.record_evidence(
             engagement_id=engagement_id,
@@ -219,18 +251,32 @@ def record_evidence(
             summary=payload.summary,
             tool_call_id=payload.tool_call_id,
             metadata=payload.metadata,
+            actor="api",
         )
         return evidence_out(row)
     except Exception as error:  # noqa: BLE001
         raise handle_error(error) from error
 
 
+@app.get("/engagements/{engagement_id}/evidence", response_model=list[EvidenceOut])
+def list_evidence(engagement_id: str, service: IntakeService = Depends(service_dep)) -> list[EvidenceOut]:
+    try:
+        return [evidence_out(row) for row in service.list_evidence(engagement_id)]
+    except Exception as error:  # noqa: BLE001
+        raise handle_error(error) from error
+
+
+@app.get("/evidence/{evidence_id}/download")
+def download_evidence(evidence_id: str, service: IntakeService = Depends(service_dep)) -> Response:
+    try:
+        evidence, data = service.get_evidence_bytes(evidence_id)
+        return Response(content=data, media_type=evidence.media_type)
+    except Exception as error:  # noqa: BLE001
+        raise handle_error(error) from error
+
+
 @app.post("/engagements/{engagement_id}/findings", response_model=FindingOut, status_code=status.HTTP_201_CREATED)
-def create_finding(
-    engagement_id: str,
-    payload: FindingCreate,
-    service: IntakeService = Depends(service_dep),
-) -> FindingOut:
+def create_finding(engagement_id: str, payload: FindingCreate, service: IntakeService = Depends(service_dep)) -> FindingOut:
     try:
         row = service.create_finding(
             engagement_id=engagement_id,
@@ -238,6 +284,7 @@ def create_finding(
             description=payload.description,
             severity=payload.severity,
             evidence_ids=payload.evidence_ids,
+            actor="api",
         )
         return finding_out(row)
     except Exception as error:  # noqa: BLE001
@@ -250,6 +297,11 @@ def list_findings(engagement_id: str, service: IntakeService = Depends(service_d
         return [finding_out(row) for row in service.list_findings(engagement_id)]
     except Exception as error:  # noqa: BLE001
         raise handle_error(error) from error
+
+
+@app.get("/audit", response_model=list[AuditLogOut])
+def list_audit(limit: int = 100, service: IntakeService = Depends(service_dep)) -> list[AuditLogOut]:
+    return [audit_log_out(row) for row in service.list_audit_logs(limit=limit)]
 
 
 @app.get("/engagements/{engagement_id}/report.md")

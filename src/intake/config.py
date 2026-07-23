@@ -19,8 +19,17 @@ class Settings(BaseSettings):
     opa_url: str = "http://localhost:8181/v1/data/intake/decision"
     default_network_policy: str = "deny_all"
 
+    api_key: str | None = None
+    enable_web_ui: bool = True
+
     worker_static_image: str = "intake/static-worker:dev"
     worker_dynamic_backend: str = "manual-vm"
+    enable_external_static_tools: bool = False
+    rizin_path: str = "rizin"
+    ghidra_analyze_headless_path: str = "analyzeHeadless"
+    ghidra_project_root: str = "/tmp/intake-ghidra"
+    external_tool_output_limit_bytes: int = 262144
+
     maximum_tool_runtime_seconds: int = 1800
     maximum_agent_turns: int = 12
     maximum_tool_calls: int = 30
