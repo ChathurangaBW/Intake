@@ -12,6 +12,18 @@ license = { text = "MIT" }
 authors = [
   { name = "ChathurangaBW" }
 ]
+keywords = ["security", "automation", "reverse-engineering", "evidence", "policy", "fastapi"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Framework :: FastAPI",
+  "Intended Audience :: Information Technology",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Security",
+  "Topic :: Software Development :: Libraries :: Application Frameworks"
+]
 dependencies = [
   "alembic>=1.13",
   "boto3>=1.34",
@@ -26,6 +38,13 @@ dependencies = [
   "typer>=0.12",
   "uvicorn>=0.30"
 ]
+
+[project.urls]
+Homepage = "https://github.com/ChathurangaBW/Intake"
+Documentation = "https://chathurangabw.github.io/Intake/"
+Repository = "https://github.com/ChathurangaBW/Intake"
+Issues = "https://github.com/ChathurangaBW/Intake/issues"
+Packages = "https://github.com/ChathurangaBW/Intake/pkgs/container/intake"
 
 [project.optional-dependencies]
 orchestration = [
