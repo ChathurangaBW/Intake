@@ -43,6 +43,7 @@ jobs:
           test -f docs/BADGES.md
           test -f docs/QA.md
           test -f docs/OPERATIONS.md
+          test -f docs/OPERATIONS_CONTROL_PLANE.md
           test -f docs/THREAT_MODEL.md
       - name: Reject stale release-candidate metadata
         run: |
