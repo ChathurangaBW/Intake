@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
 from fastapi.testclient import TestClient
 
 from intake.config import settings
@@ -63,3 +64,23 @@ def test_inline_execution_is_disabled_by_default(monkeypatch: pytest.MonkeyPatch
     response = TestClient(app).post("/tool-calls/tool-1/execute")
     assert response.status_code == 409
     assert response.json()["enqueue_endpoint"] == "/tool-calls/tool-1/enqueue"
+
+
+def test_route_specific_csp_keeps_docs_and_dashboard_usable(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(settings, "trusted_hosts", ["testserver"])
+    monkeypatch.setattr(settings, "allowed_origins", [])
+    app = FastAPI()
+    install_platform(app)
+
+    @app.get("/ui", response_class=HTMLResponse)
+    def ui() -> str:
+        return "<style>body{display:block}</style>"
+
+    client = TestClient(app)
+    docs_csp = client.get("/docs").headers["content-security-policy"]
+    ui_csp = client.get("/ui").headers["content-security-policy"]
+
+    assert "https://cdn.jsdelivr.net" in docs_csp
+    assert "'unsafe-inline'" in ui_csp
+    assert "frame-ancestors 'none'" in docs_csp
+    assert "frame-ancestors 'none'" in ui_csp
