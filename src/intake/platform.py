@@ -15,6 +15,7 @@ from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_
 from sqlalchemy import text
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from intake import __version__
 from intake.auth import principal_from_request
 from intake.config import settings
 from intake.db import engine
@@ -52,6 +53,7 @@ def _safe_route_path(request: Request) -> str:
 
 
 def install_platform(app: FastAPI) -> None:
+    app.version = __version__
     if settings.trusted_hosts:
         app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.trusted_hosts)
     if settings.allowed_origins:
