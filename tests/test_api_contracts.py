@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from typing import Any
 
 import pytest
@@ -42,6 +43,7 @@ class Row:
     action: str = "test.action"
     subject: str = "row-1"
     outcome: str = "ok"
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 class FakeService:
@@ -51,7 +53,7 @@ class FakeService:
             "targets": 1,
             "artifacts": 1,
             "tool_calls": 1,
-            "pending_approvals": 0,
+            "approvals_pending": 0,
             "evidence": 1,
             "findings": 1,
         }
@@ -78,10 +80,28 @@ class FakeService:
         return [Row(id="artifact-1", engagement_id=engagement_id)]
 
     def list_tools(self) -> list[dict[str, Any]]:
-        return [{"name": "ghidra", "operation": "analyze", "risk": "read_only", "description": "Read-only analysis"}]
+        return [
+            {
+                "name": "ghidra",
+                "operation": "analyze",
+                "risk": "read_only",
+                "description": "Read-only analysis",
+                "requires_artifact": True,
+                "requires_target": False,
+                "network_required": False,
+            }
+        ]
 
     def tool_status(self) -> list[dict[str, Any]]:
-        return [{"name": "ghidra", "operation": "analyze", "available": True, "details": "ok"}]
+        return [
+            {
+                "name": "ghidra",
+                "operation": "analyze",
+                "available": True,
+                "runtime": "fake",
+                "detail": "ok",
+            }
+        ]
 
     async def propose_tool_call(self, request: Any) -> Any:
         class Result:
@@ -152,6 +172,7 @@ def test_engagement_artifact_tool_and_report_contract() -> None:
     upload = client.post("/engagements/eng-qa/artifacts", files={"file": ("sample.bin", b"data", "application/octet-stream")})
     assert upload.status_code == 201
     assert client.get("/tools").status_code == 200
+    assert client.get("/tools/status").status_code == 200
     proposed = client.post("/tool-calls", json={"engagement_id": "eng-qa", "actor": "qa", "tool": "ghidra", "operation": "analyze", "risk": "read_only", "arguments": {}})
     assert proposed.status_code == 201
     assert client.post("/tool-calls/tool-1/execute").json()["status"] == "completed"
