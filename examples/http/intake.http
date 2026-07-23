@@ -1,0 +1,56 @@
+@baseUrl = http://127.0.0.1:8000
+@apiKey = change-this-if-enabled
+@engagement = http-demo
+
+### Health
+GET {{baseUrl}}/health
+
+### Stats
+GET {{baseUrl}}/stats
+X-Intake-Api-Key: {{apiKey}}
+
+### Create engagement
+POST {{baseUrl}}/engagements
+Content-Type: application/json
+X-Intake-Api-Key: {{apiKey}}
+
+{
+  "engagement_id": "{{engagement}}",
+  "name": "HTTP Demo Authorized Assessment",
+  "classification": "demo",
+  "manifest": {
+    "allowed": {
+      "read_only_static_analysis": true
+    }
+  }
+}
+
+### Add target
+POST {{baseUrl}}/engagements/{{engagement}}/targets
+Content-Type: application/json
+X-Intake-Api-Key: {{apiKey}}
+
+{
+  "target_ref": "app.authorized-example.test",
+  "target_type": "domain"
+}
+
+### List tools
+GET {{baseUrl}}/tools
+X-Intake-Api-Key: {{apiKey}}
+
+### Tool status
+GET {{baseUrl}}/tools/status
+X-Intake-Api-Key: {{apiKey}}
+
+### Pending approvals
+GET {{baseUrl}}/approvals/pending
+X-Intake-Api-Key: {{apiKey}}
+
+### Audit logs
+GET {{baseUrl}}/audit
+X-Intake-Api-Key: {{apiKey}}
+
+### Report
+GET {{baseUrl}}/engagements/{{engagement}}/report.md
+X-Intake-Api-Key: {{apiKey}}
