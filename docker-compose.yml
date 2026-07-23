@@ -34,11 +34,6 @@ services:
       - "9001:9001"
     volumes:
       - minio:/data
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
 
   api:
     build: .
@@ -55,7 +50,7 @@ services:
       postgres:
         condition: service_healthy
       minio:
-        condition: service_healthy
+        condition: service_started
       opa:
         condition: service_started
 
