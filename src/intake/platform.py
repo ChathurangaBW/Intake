@@ -52,6 +52,21 @@ def _safe_route_path(request: Request) -> str:
     return str(path or request.url.path)
 
 
+def _content_security_policy(path: str) -> str:
+    if path in {"/docs", "/redoc"}:
+        return (
+            "default-src 'self'; "
+            "script-src 'self' https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "img-src 'self' data: https://fastapi.tiangolo.com; "
+            "font-src 'self' https://cdn.jsdelivr.net; "
+            "frame-ancestors 'none'; base-uri 'none'"
+        )
+    if path.startswith("/ui"):
+        return "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'"
+    return "default-src 'self'; frame-ancestors 'none'; base-uri 'none'"
+
+
 def install_platform(app: FastAPI) -> None:
     app.version = __version__
     if settings.trusted_hosts:
@@ -117,7 +132,7 @@ def install_platform(app: FastAPI) -> None:
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
-        response.headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none'; base-uri 'none'"
+        response.headers["Content-Security-Policy"] = _content_security_policy(request.url.path)
         response.headers["Cache-Control"] = "no-store"
 
         if settings.structured_logging:
