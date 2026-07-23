@@ -1,7 +1,7 @@
 {
   "name": "Intake",
   "version": "1.0.0",
-  "status": "local-first release candidate",
+  "status": "stable local-first release",
   "repository": "https://github.com/ChathurangaBW/Intake",
   "container": "ghcr.io/chathurangabw/intake",
   "python_package": "intake-security",
@@ -17,19 +17,24 @@
     "MinIO"
   ],
   "operator_surfaces": [
-    "Web dashboard",
+    "Browser operator console",
     "OpenAPI docs",
     "Typer CLI",
     "Python SDK",
-    "HTTP request collection"
+    "HTTP request collection",
+    "Operations control plane"
   ],
-  "qa_gates": [
+  "release_gates": [
     "ruff lint",
     "unit tests",
     "contract tests",
     "security checks",
     "compose smoke test",
-    "docker image build"
+    "docker image build",
+    "operator console contract test",
+    "readiness diagnostics",
+    "evidence verification",
+    "audit export"
   ],
   "blocked_defaults": [
     "unrestricted shell execution",
@@ -39,5 +44,7 @@
     "destructive actions",
     "unscoped active network operations",
     "autonomous dynamic execution"
-  ]
+  ],
+  "release_commit_expected": "main",
+  "tag": "v1.0.0"
 }
