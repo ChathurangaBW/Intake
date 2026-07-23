@@ -1,4 +1,4 @@
-.PHONY: install dev-up dev-down migrate api test lint format check
+.PHONY: install dev-up dev-down migrate api test test-unit test-contract lint format check smoke qa
 
 install:
 	pip install -e .[dev]
@@ -18,10 +18,21 @@ api:
 test:
 	pytest
 
+test-unit:
+	pytest -m "unit or not (contract or integration or smoke)"
+
+test-contract:
+	pytest -m contract
+
 lint:
 	ruff check .
 
 format:
 	ruff format .
 
-check: lint test
+check: lint test-unit test-contract
+
+smoke:
+	bash scripts/smoke.sh
+
+qa: check smoke
