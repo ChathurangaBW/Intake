@@ -8,6 +8,7 @@ Start with [`index.html`](index.html), then use these focused pages:
 - [`PROJECT_STATUS.md`](PROJECT_STATUS.md) — supported Intake 1.0 production scope
 - [`RELEASE_NOTES_1.0.0.md`](RELEASE_NOTES_1.0.0.md) — final 1.0 release summary
 - [`FINAL_PRODUCT_CHECKLIST.md`](FINAL_PRODUCT_CHECKLIST.md) — final product readiness checklist
+- [`OPERATOR_CONSOLE.md`](OPERATOR_CONSOLE.md) — browser workbench for local operator workflows
 - [`DEMO.md`](DEMO.md) — demo workflow and seed data
 - [`SDK.md`](SDK.md) — Python SDK usage
 - [`OPERATIONS_CONTROL_PLANE.md`](OPERATIONS_CONTROL_PLANE.md) — diagnostics, exports, audit NDJSON, and evidence verification
