@@ -21,6 +21,7 @@ from intake.runtime_schemas import (
     TargetOut,
     ToolCallOut,
     ToolCallProposeOut,
+    ToolExecutionOut,
     approval_out,
     artifact_out,
     engagement_out,
@@ -32,7 +33,7 @@ from intake.runtime_schemas import (
 from intake.schemas import ToolCallDecision, ToolCallRequest
 from intake.services import IntakeError, IntakeService, NotFoundError, ScopeError
 
-app = FastAPI(title="Intake", version="0.2.0")
+app = FastAPI(title="Intake", version="0.3.0")
 
 
 def session_dep() -> Generator[Session, None, None]:
@@ -141,6 +142,18 @@ async def propose_tool_call(
             approval_id=result.approval_id,
             decision=result.decision,
         )
+    except Exception as error:  # noqa: BLE001
+        raise handle_error(error) from error
+
+
+@app.post("/tool-calls/{tool_call_id}/execute", response_model=ToolExecutionOut)
+async def execute_tool_call(
+    tool_call_id: str,
+    service: IntakeService = Depends(service_dep),
+) -> ToolExecutionOut:
+    try:
+        result = await service.execute_tool_call(tool_call_id)
+        return ToolExecutionOut(**result.model_dump(mode="json"))
     except Exception as error:  # noqa: BLE001
         raise handle_error(error) from error
 
