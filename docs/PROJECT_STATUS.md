@@ -1,25 +1,35 @@
 # Project status
 
-Intake is currently at `0.1.0` initial app release level.
+Intake is at `1.0.0`, the first stable release of its documented local-first, single-tenant product scope.
 
-## Stable enough for
+## Supported production scope
 
-- Local development
-- Authorized test engagements
-- Artifact intake
-- Policy decision testing
-- Audit/evidence workflow testing
-- Read-only static metadata/string extraction
-- Documentation and QA workflow validation
+- Local or isolated single-tenant deployments
+- Authorized engagement and target management
+- Artifact intake with idempotent content-addressed storage
+- OPA-backed policy decisions and approval workflow
+- Durable read-only static-analysis jobs
+- Evidence storage, integrity verification, audit logging, findings, and reports
+- API, CLI, and built-in operator dashboard
+- PostgreSQL, OPA, MinIO, API, and worker deployment through Docker Compose
 
-## Not yet stable enough for
+## Deployment requirements
 
-- Multi-user production deployment
-- Internet-exposed operation without additional hardening
+- Configure role-aware API keys before non-local access
+- Use dedicated credentials rather than example Compose credentials
+- Keep external static tools inside an isolated worker environment
+- Retain default-deny network and execution policies
+- Review the threat model and security boundary before adding tools
+
+## Outside the supported 1.0 scope
+
+- Multi-tenant identity federation
+- Public internet exposure without an authenticated reverse proxy and additional hardening
 - High-risk malware detonation
 - Autonomous active network testing
-- Customer production engagements without independent review
+- Unrestricted command execution
+- Exploit, evasion, persistence, or destructive workflows
 
-## Release readiness
+## Release validation
 
-The repo includes CI, QA, package, release, and docs workflows. A versioned release is created by pushing a tag such as `v0.1.0`.
+The 1.0 gate covers linting, unit and API contract tests, package build, dependency audit, static security analysis, container vulnerability scanning, clean migrations, readiness, durable worker execution, and evidence verification.

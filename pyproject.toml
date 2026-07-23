@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "intake-security"
-version = "1.0.0rc1"
+version = "1.0.0"
 description = "Policy-controlled security automation framework for authorized reverse engineering and assessment workflows."
 readme = "README.md"
 requires-python = ">=3.12"
@@ -14,7 +14,7 @@ authors = [
 ]
 keywords = ["security", "automation", "reverse-engineering", "evidence", "policy", "fastapi"]
 classifiers = [
-  "Development Status :: 4 - Beta",
+  "Development Status :: 5 - Production/Stable",
   "Environment :: Console",
   "Framework :: FastAPI",
   "Intended Audience :: Information Technology",
