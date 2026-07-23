@@ -18,13 +18,15 @@ All notable changes to Intake will be documented in this file.
 - Container vulnerability scanning, SBOM generation, and provenance attestations
 - Python distribution verification and provenance attestations
 - Operations control-plane API and CLI for readiness diagnostics, metadata exports, audit NDJSON, and evidence inventory verification
+- Browser operator console for engagements, targets, artifacts, tool calls, approvals, findings, evidence, readiness, verification, reports, and exports
 
 ### Changed
 
 - HTTP tool execution now uses the durable enqueue/worker path by default
 - Package and API versioning now share one version source
-- Release gates now include clean migrations, readiness, worker execution, and evidence verification
+- Release gates now include clean migrations, readiness, worker execution, evidence verification, and operator console contract checks
 - Operator handoff now includes deterministic engagement export and audit export paths
+- `/ui` is now an action-oriented operator workbench instead of a read-only dashboard
 
 ### Security boundary
 
