@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -7,6 +8,7 @@ from intake.auth import install_api_key_auth
 from intake.config import settings
 
 
+@pytest.mark.contract
 def test_api_key_auth_can_be_enabled(monkeypatch) -> None:
     monkeypatch.setattr(settings, "api_key", "secret")
     app = FastAPI()
@@ -21,6 +23,7 @@ def test_api_key_auth_can_be_enabled(monkeypatch) -> None:
     assert client.get("/private", headers={"x-intake-api-key": "secret"}).status_code == 200
 
 
+@pytest.mark.contract
 def test_health_is_public_when_auth_enabled(monkeypatch) -> None:
     monkeypatch.setattr(settings, "api_key", "secret")
     app = FastAPI()
