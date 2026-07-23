@@ -1,4 +1,4 @@
-.PHONY: install dev-up dev-down migrate api worker test test-unit test-contract lint format security check smoke compose-smoke qa
+.PHONY: install dev-up dev-down prod-up prod-down migrate api worker demo test test-unit test-contract lint format security check smoke compose-smoke qa release-check
 
 install:
 	pip install -e .[dev]
@@ -9,6 +9,12 @@ dev-up:
 dev-down:
 	docker compose down
 
+prod-up:
+	docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+prod-down:
+	docker compose -f docker-compose.yml -f docker-compose.prod.yml down
+
 migrate:
 	alembic upgrade head
 
@@ -17,6 +23,9 @@ api:
 
 worker:
 	intake-worker
+
+demo:
+	python scripts/seed_demo.py
 
 test:
 	pytest
@@ -49,3 +58,6 @@ compose-smoke:
 		bash scripts/smoke.sh
 
 qa: check security compose-smoke
+
+release-check: qa
+	python -m build
