@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     readiness_timeout_seconds: float = Field(default=3.0, ge=0.1, le=30.0)
     structured_logging: bool = True
     metrics_enabled: bool = True
+    enable_inline_tool_execution: bool = False
 
     worker_static_image: str = "intake/static-worker:dev"
     worker_dynamic_backend: str = "manual-vm"
