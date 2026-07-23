@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Intake Documentation</title>
+  <style>
+    :root { color-scheme: dark; --bg:#0b1020; --panel:#111827; --text:#f8fafc; --muted:#cbd5e1; --line:#334155; --blue:#60a5fa; --cyan:#22d3ee; }
+    body { margin:0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif; background: radial-gradient(circle at top left, #172554 0, var(--bg) 40%); color:var(--text); }
+    main { max-width: 1080px; margin: 0 auto; padding: 48px 24px 72px; }
+    img.logo { width: 100%; max-width: 860px; border-radius: 28px; box-shadow: 0 24px 80px rgba(0,0,0,.35); }
+    h1 { font-size: clamp(42px, 8vw, 82px); margin: 40px 0 10px; letter-spacing: -0.05em; }
+    p.lead { font-size: 22px; line-height: 1.55; color: var(--muted); max-width: 820px; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap:18px; margin-top:34px; }
+    a.card { display:block; padding:22px; border:1px solid var(--line); border-radius:18px; background:rgba(17,24,39,.76); color:var(--text); text-decoration:none; }
+    a.card:hover { border-color: var(--cyan); transform: translateY(-1px); }
+    .card strong { display:block; font-size:18px; margin-bottom:8px; }
+    .card span { color:var(--muted); line-height:1.4; }
+    code { color: var(--cyan); background:#020617; padding:2px 6px; border-radius:6px; }
+    footer { margin-top:42px; color:#94a3b8; font-size:14px; }
+  </style>
+</head>
+<body>
+  <main>
+    <img class="logo" src="assets/logo.svg" alt="Intake logo">
+    <h1>Intake Documentation</h1>
+    <p class="lead">Policy-gated security automation for authorized reverse engineering, evidence handling, audit logging, and safe assessment workflows.</p>
+
+    <div class="grid">
+      <a class="card" href="APP_CAPABILITIES.md"><strong>Application capabilities</strong><span>What Intake can do now and the product guardrails it enforces.</span></a>
+      <a class="card" href="QA.md"><strong>QA plan</strong><span>Unit, contract, smoke, integration, and release acceptance gates.</span></a>
+      <a class="card" href="OPERATIONS.md"><strong>Operations guide</strong><span>Runbook material for local operation and controlled execution.</span></a>
+      <a class="card" href="THREAT_MODEL.md"><strong>Threat model</strong><span>Security boundaries, assumptions, and intentionally blocked behaviors.</span></a>
+      <a class="card" href="PACKAGING.md"><strong>Package publishing</strong><span>How the GHCR image is built, tagged, and consumed.</span></a>
+      <a class="card" href="RELEASE.md"><strong>Release process</strong><span>How to tag, validate, and publish a versioned release.</span></a>
+    </div>
+
+    <p class="lead">Run locally with <code>docker compose up --build</code>, then open <code>/ui</code> or <code>/docs</code>.</p>
+    <footer>Authorized systems only. Intake does not expose unrestricted shell execution, evasion, persistence, destructive workflows, or unscoped network activity.</footer>
+  </main>
+</body>
+</html>
