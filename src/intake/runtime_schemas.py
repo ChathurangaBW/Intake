@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -20,6 +21,16 @@ class EngagementOut(BaseModel):
     status: str
     classification: str
     manifest: dict[str, Any]
+
+
+class DashboardStats(BaseModel):
+    engagements: int
+    targets: int
+    artifacts: int
+    evidence: int
+    tool_calls: int
+    approvals_pending: int
+    findings: int
 
 
 class TargetCreate(BaseModel):
@@ -45,6 +56,24 @@ class ArtifactOut(BaseModel):
     storage_uri: str
     source: str
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class ToolSpecOut(BaseModel):
+    name: str
+    operation: str
+    risk: str
+    description: str
+    requires_artifact: bool = False
+    requires_target: bool = False
+    network_required: bool = False
+
+
+class ToolStatusOut(BaseModel):
+    name: str
+    operation: str
+    available: bool
+    runtime: str
+    detail: str
 
 
 class ToolCallOut(BaseModel):
@@ -123,14 +152,18 @@ class FindingOut(BaseModel):
     description: str
 
 
+class AuditLogOut(BaseModel):
+    id: str
+    timestamp: datetime
+    actor: str
+    action: str
+    subject: str
+    outcome: str
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
 def engagement_out(row: Any) -> EngagementOut:
-    return EngagementOut(
-        id=row.id,
-        name=row.name,
-        status=row.status,
-        classification=row.classification,
-        manifest=row.manifest,
-    )
+    return EngagementOut(id=row.id, name=row.name, status=row.status, classification=row.classification, manifest=row.manifest)
 
 
 def target_out(row: Any) -> TargetOut:
@@ -202,4 +235,16 @@ def finding_out(row: Any) -> FindingOut:
         status=row.status,
         verification_status=row.verification_status,
         description=row.description,
+    )
+
+
+def audit_log_out(row: Any) -> AuditLogOut:
+    return AuditLogOut(
+        id=row.id,
+        timestamp=row.timestamp,
+        actor=row.actor,
+        action=row.action,
+        subject=row.subject,
+        outcome=row.outcome,
+        metadata=row.metadata_,
     )
