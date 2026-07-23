@@ -1,0 +1,31 @@
+name: Feature request
+description: Suggest a scoped Intake improvement
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What operator workflow or product gap should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the smallest safe implementation.
+    validations:
+      required: true
+  - type: dropdown
+    id: boundary
+    attributes:
+      label: Safety boundary
+      description: Does this require new execution capability?
+      options:
+        - Documentation or UI only
+        - Read-only analysis
+        - Approval-gated execution
+        - Needs threat-model review
+    validations:
+      required: true

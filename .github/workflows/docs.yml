@@ -1,0 +1,42 @@
+name: docs
+
+on:
+  pull_request:
+    paths:
+      - 'README.md'
+      - 'docs/**'
+      - 'assets/**'
+      - '.github/workflows/docs.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'README.md'
+      - 'docs/**'
+      - 'assets/**'
+      - '.github/workflows/docs.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate documentation links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check required docs files
+        run: |
+          test -f README.md
+          test -f assets/logo.svg
+          test -f docs/index.html
+          test -f docs/README.md
+          test -f docs/APP_CAPABILITIES.md
+          test -f docs/PROJECT_STATUS.md
+          test -f docs/SECURITY_BOUNDARY.md
+          test -f docs/PACKAGING.md
+          test -f docs/CONTAINER.md
+          test -f docs/RELEASE.md
+          test -f docs/BADGES.md
+          test -f docs/QA.md
+          test -f docs/OPERATIONS.md
+          test -f docs/THREAT_MODEL.md

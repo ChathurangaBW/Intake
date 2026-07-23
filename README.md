@@ -1,16 +1,32 @@
-# Intake
+<p align="center">
+  <img src="assets/logo.svg" alt="Intake logo" width="760">
+</p>
 
-Intake is a policy-controlled security automation app for authorized reverse engineering, evidence handling, and assessment workflows.
+<p align="center">
+  <strong>Policy-gated security automation for authorized reverse engineering, evidence handling, and assessment workflows.</strong>
+</p>
 
-The project is built around this rule:
+<p align="center">
+  <a href="https://github.com/ChathurangaBW/Intake/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/ChathurangaBW/Intake/ci.yml?branch=main&label=ci"></a>
+  <a href="https://github.com/ChathurangaBW/Intake/pkgs/container/intake"><img alt="GHCR package" src="https://img.shields.io/badge/package-ghcr.io%2Fchathurangabw%2Fintake-blue"></a>
+  <a href="https://github.com/ChathurangaBW/Intake/releases"><img alt="Release" src="https://img.shields.io/github/v/release/ChathurangaBW/Intake?include_prereleases&label=release"></a>
+  <img alt="Python" src="https://img.shields.io/badge/python-3.12%2B-3776AB">
+  <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
+</p>
 
-> The model proposes. Policy decides. Isolated workers execute. Evidence proves. A human authorizes sensitive actions.
+---
 
-## Current app capability
+## What Intake is
 
-Intake is now a runnable local application, not just an architecture scaffold. It includes:
+Intake is a local-first security automation application built around one operating rule:
 
-- FastAPI service with OpenAPI docs
+> **The model proposes. Policy decides. Isolated workers execute. Evidence proves. A human authorizes sensitive actions.**
+
+It is designed for authorized work only: reverse-engineering intake, artifact handling, policy decisions, approval workflow, safe static analysis, evidence storage, audit logging, and assessment reporting.
+
+## Core capabilities
+
+- FastAPI service with OpenAPI docs at `/docs`
 - Built-in web dashboard at `/ui`
 - Optional API key authentication through `INTAKE_API_KEY`
 - Typer operator CLI
@@ -22,16 +38,18 @@ Intake is now a runnable local application, not just an architecture scaffold. I
 - Tool catalog and tool availability endpoints
 - Authorized tool-call execution path
 - Safe local static-analysis worker for metadata and strings extraction
-- Optional fixed-argument Ghidra/Rizin execution path when the operator enables external tools
+- Optional fixed-argument Ghidra/Rizin execution path when explicitly enabled
 - Markdown report rendering
 - Docker Compose development stack
 - CI workflow, QA markers, API contract tests, and smoke workflow
+- GitHub Actions package publishing to GHCR
+- GitHub Pages documentation workflow
 
 ## Guardrails
 
-Intake does not expose unrestricted shell execution. It exposes typed, scoped tool contracts. Dynamic execution and active network actions are policy-gated and not auto-run by the default runtime.
+Intake does **not** expose unrestricted shell execution. It exposes typed, scoped tool contracts. Dynamic execution and active network actions are policy-gated and are not auto-run by the default runtime.
 
-This is a deliberate product boundary, not an unfinished placeholder. The included app performs authorized intake, artifact handling, policy decisions, approval workflow, safe static analysis, evidence storage, audit logging, and reporting.
+This is a deliberate product boundary, not an unfinished placeholder.
 
 ## Quick start
 
@@ -40,38 +58,16 @@ cp .env.example .env
 docker compose up --build
 ```
 
-The API starts on:
-
-```text
-http://127.0.0.1:8000
-```
-
-OpenAPI docs:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
-Web dashboard:
+Open:
 
 ```text
 http://127.0.0.1:8000/ui
+http://127.0.0.1:8000/docs
 ```
 
 The API container runs Alembic migrations on startup.
 
-## Local CLI setup
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .[dev,orchestration]
-docker compose up -d postgres opa minio
-alembic upgrade head
-intake doctor
-```
-
-## Recommended local security setting
+## Secure local run
 
 Set an API key before exposing the service beyond localhost:
 
@@ -86,7 +82,16 @@ Then send API requests with:
 -H 'X-Intake-Api-Key: change-this-long-random-value'
 ```
 
-## Example CLI workflow
+## CLI workflow
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .[dev,orchestration]
+docker compose up -d postgres opa minio
+alembic upgrade head
+intake doctor
+```
 
 Create an engagement:
 
@@ -100,7 +105,7 @@ Add an authorized target:
 intake target add eng-demo app.authorized-example.test domain
 ```
 
-Ingest a local artifact:
+Ingest an artifact:
 
 ```bash
 intake artifact ingest eng-demo ./sample.bin
@@ -112,45 +117,21 @@ Check tool availability:
 intake tool status
 ```
 
-Propose a read-only static analysis tool call:
+Propose and execute a read-only static analysis call:
 
 ```bash
 intake tool propose eng-demo analyst ghidra analyze read_only '{"artifact_id":"<artifact-id>","profile":"quick"}'
-```
-
-Execute it after the policy marks it `authorized`:
-
-```bash
 intake tool execute <tool-call-id>
 ```
 
-List evidence:
+List evidence and render a report:
 
 ```bash
 intake evidence list eng-demo
-```
-
-Create a finding:
-
-```bash
-intake finding create eng-demo "Finding title" "Evidence-backed description" informational '["<evidence-id>"]'
-```
-
-Render a report:
-
-```bash
 intake finding report eng-demo --output report.md
 ```
 
-Inspect audit logs:
-
-```bash
-intake audit list
-```
-
 ## API workflow
-
-Create an engagement:
 
 ```bash
 curl -s http://127.0.0.1:8000/engagements \
@@ -158,20 +139,14 @@ curl -s http://127.0.0.1:8000/engagements \
   -d '{"engagement_id":"eng-demo","name":"Demo Authorized Assessment"}'
 ```
 
-Upload an artifact:
-
 ```bash
 curl -s http://127.0.0.1:8000/engagements/eng-demo/artifacts \
   -F 'file=@./sample.bin;type=application/octet-stream'
 ```
 
-List tool status:
-
 ```bash
 curl -s http://127.0.0.1:8000/tools/status
 ```
-
-Propose a tool call:
 
 ```bash
 curl -s http://127.0.0.1:8000/tool-calls \
@@ -179,23 +154,43 @@ curl -s http://127.0.0.1:8000/tool-calls \
   -d '{"engagement_id":"eng-demo","actor":"analyst","tool":"ghidra","operation":"analyze","risk":"read_only","arguments":{"artifact_id":"<artifact-id>","profile":"quick"}}'
 ```
 
-Execute an authorized tool call:
-
 ```bash
 curl -s -X POST http://127.0.0.1:8000/tool-calls/<tool-call-id>/execute
-```
-
-Download evidence:
-
-```bash
-curl -s http://127.0.0.1:8000/evidence/<evidence-id>/download -o evidence.json
-```
-
-Render report:
-
-```bash
 curl -s http://127.0.0.1:8000/engagements/eng-demo/report.md
 ```
+
+## Package
+
+The repository publishes a Docker image to GitHub Container Registry through `.github/workflows/package.yml`.
+
+After the package workflow runs, pull the image with:
+
+```bash
+docker pull ghcr.io/chathurangabw/intake:main
+```
+
+For versioned releases:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+That triggers release/package workflows for the version tag.
+
+## Documentation
+
+Documentation lives in [`docs/`](docs/) and is published by the GitHub Pages workflow when Pages is enabled for GitHub Actions.
+
+Start here:
+
+- [Documentation home](docs/index.html)
+- [Application capabilities](docs/APP_CAPABILITIES.md)
+- [QA plan](docs/QA.md)
+- [Operations guide](docs/OPERATIONS.md)
+- [Threat model](docs/THREAT_MODEL.md)
+- [Release process](docs/RELEASE.md)
+- [Package publishing](docs/PACKAGING.md)
 
 ## QA workflow
 
@@ -205,7 +200,7 @@ Fast checks:
 make check
 ```
 
-Full local smoke check against a running app:
+Smoke check against a running app:
 
 ```bash
 make smoke
@@ -217,7 +212,7 @@ Combined QA gate:
 make qa
 ```
 
-QA coverage is documented in [`docs/QA.md`](docs/QA.md). The CI workflow runs linting, unit tests, API contract tests, and Docker image build validation.
+The CI workflow runs linting, unit tests, API contract tests, and Docker image build validation.
 
 ## Enabling real Ghidra/Rizin execution
 
@@ -234,39 +229,24 @@ The external execution path uses fixed argument vectors, not arbitrary shell str
 ## Repository layout
 
 ```text
-src/intake/                  Python package
-src/intake/api.py            FastAPI app
-src/intake/auth.py           Optional API key auth
-src/intake/web.py            Built-in HTML dashboard
-src/intake/cli.py            Operator CLI
-src/intake/services.py       Runtime application service layer
-src/intake/models.py         SQLAlchemy persistence models
-src/intake/storage.py        Content-addressed evidence store
-src/intake/tool_runtime.py   Default constrained tool registry
-src/intake/scope.py          Engagement scope validation
-src/intake/tools/            Typed tool wrappers
-src/intake/workers/          Static/dynamic worker contracts and static workers
-src/intake/orchestration/    Workflow state-machine skeleton
-migrations/                  Alembic migrations
-policies/                    OPA/Rego policy
-examples/                    Example engagement manifest
-docs/                        Architecture, operations, threat model, roadmap, QA
-```
-
-## Make targets
-
-```bash
-make install
-make dev-up
-make migrate
-make api
-make test
-make test-unit
-make test-contract
-make smoke
-make qa
-make lint
-make check
+assets/                       Branding assets
+docs/                         Documentation and GitHub Pages source
+src/intake/                   Python package
+src/intake/api.py             FastAPI app
+src/intake/auth.py            Optional API key auth
+src/intake/web.py             Built-in HTML dashboard
+src/intake/cli.py             Operator CLI
+src/intake/services.py        Runtime application service layer
+src/intake/models.py          SQLAlchemy persistence models
+src/intake/storage.py         Content-addressed evidence store
+src/intake/tool_runtime.py    Default constrained tool registry
+src/intake/scope.py           Engagement scope validation
+src/intake/tools/             Typed tool wrappers
+src/intake/workers/           Static/dynamic worker contracts and static workers
+migrations/                   Alembic migrations
+policies/                     OPA/Rego policy
+examples/                     Example engagement manifest
+scripts/                      Smoke and helper scripts
 ```
 
 ## Safety boundary

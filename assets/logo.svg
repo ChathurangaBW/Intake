@@ -1,0 +1,33 @@
+<svg width="960" height="260" viewBox="0 0 960 260" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Intake logo</title>
+  <desc id="desc">Intake wordmark with shield, evidence chain, and policy gate motif.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="960" y2="260" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0B1020"/>
+      <stop offset="1" stop-color="#172554"/>
+    </linearGradient>
+    <linearGradient id="mark" x1="78" y1="46" x2="208" y2="214" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#60A5FA"/>
+      <stop offset="0.52" stop-color="#22D3EE"/>
+      <stop offset="1" stop-color="#A78BFA"/>
+    </linearGradient>
+    <filter id="shadow" x="0" y="0" width="260" height="260" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <rect width="960" height="260" rx="36" fill="url(#bg)"/>
+  <g filter="url(#shadow)">
+    <path d="M142 38L224 72V122C224 171 194 210 142 232C90 210 60 171 60 122V72L142 38Z" fill="#0F172A" stroke="url(#mark)" stroke-width="8"/>
+    <path d="M100 124H184" stroke="url(#mark)" stroke-width="13" stroke-linecap="round"/>
+    <path d="M142 82V184" stroke="url(#mark)" stroke-width="13" stroke-linecap="round"/>
+    <circle cx="100" cy="124" r="17" fill="#0B1020" stroke="#22D3EE" stroke-width="8"/>
+    <circle cx="184" cy="124" r="17" fill="#0B1020" stroke="#A78BFA" stroke-width="8"/>
+    <circle cx="142" cy="82" r="17" fill="#0B1020" stroke="#60A5FA" stroke-width="8"/>
+    <circle cx="142" cy="184" r="17" fill="#0B1020" stroke="#22D3EE" stroke-width="8"/>
+  </g>
+
+  <text x="278" y="122" fill="#F8FAFC" font-family="Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="76" font-weight="800" letter-spacing="-2">Intake</text>
+  <text x="282" y="168" fill="#CBD5E1" font-family="Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="27" font-weight="500">Policy-gated security automation</text>
+  <text x="282" y="205" fill="#93C5FD" font-family="Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="20" font-weight="600">Scope • Evidence • Audit • Safe Static Analysis</text>
+</svg>
