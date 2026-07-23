@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Intake Documentation</title>
+  <title>Intake 1.0 Documentation</title>
   <style>
     :root { color-scheme: dark; --bg:#0b1020; --panel:#111827; --text:#f8fafc; --muted:#cbd5e1; --line:#334155; --blue:#60a5fa; --cyan:#22d3ee; }
     body { margin:0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif; background: radial-gradient(circle at top left, #172554 0, var(--bg) 40%); color:var(--text); }
@@ -23,20 +23,22 @@
 <body>
   <main>
     <img class="logo" src="assets/logo.svg" alt="Intake logo">
-    <h1>Intake Documentation</h1>
-    <p class="lead">Policy-gated security automation for authorized reverse engineering, evidence handling, audit logging, and safe assessment workflows.</p>
+    <h1>Intake 1.0 Documentation</h1>
+    <p class="lead">Policy-gated security automation for authorized reverse engineering, evidence handling, durable jobs, audit logging, and safe assessment workflows.</p>
 
     <div class="grid">
-      <a class="card" href="APP_CAPABILITIES.md"><strong>Application capabilities</strong><span>What Intake can do now and the product guardrails it enforces.</span></a>
-      <a class="card" href="PROJECT_STATUS.md"><strong>Project status</strong><span>Release maturity, supported uses, and current stability boundary.</span></a>
+      <a class="card" href="RELEASE_NOTES_1.0.0.md"><strong>Intake 1.0 release</strong><span>Stable product scope, major capabilities, validation gates, and distribution trust.</span></a>
+      <a class="card" href="APP_CAPABILITIES.md"><strong>Application capabilities</strong><span>What Intake can do and the product guardrails it enforces.</span></a>
+      <a class="card" href="PROJECT_STATUS.md"><strong>Supported scope</strong><span>Supported deployments, operator requirements, and excluded use cases.</span></a>
       <a class="card" href="QA.md"><strong>QA plan</strong><span>Unit, contract, smoke, integration, and release acceptance gates.</span></a>
       <a class="card" href="OPERATIONS.md"><strong>Operations guide</strong><span>Runbook material for local operation and controlled execution.</span></a>
       <a class="card" href="THREAT_MODEL.md"><strong>Threat model</strong><span>Security boundaries, assumptions, and intentionally blocked behaviors.</span></a>
       <a class="card" href="SECURITY_BOUNDARY.md"><strong>Security boundary</strong><span>Allowed defaults, blocked defaults, and operator safety model.</span></a>
+      <a class="card" href="SUPPLY_CHAIN.md"><strong>Supply-chain security</strong><span>Image scanning, SBOMs, provenance attestations, and release verification.</span></a>
       <a class="card" href="PACKAGING.md"><strong>Package publishing</strong><span>How the GHCR image is built, tagged, and consumed.</span></a>
       <a class="card" href="CONTAINER.md"><strong>Container usage</strong><span>How to run Intake from Compose or the published GHCR image.</span></a>
       <a class="card" href="RELEASE.md"><strong>Release process</strong><span>How to tag, validate, and publish a versioned release.</span></a>
-      <a class="card" href="BADGES.md"><strong>Badges</strong><span>README badge sources and when package/release badges populate.</span></a>
+      <a class="card" href="BADGES.md"><strong>Badges</strong><span>README badge sources and package/release status.</span></a>
     </div>
 
     <p class="lead">Run locally with <code>docker compose up --build</code>, then open <code>/ui</code> or <code>/docs</code>.</p>
