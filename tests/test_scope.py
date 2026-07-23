@@ -1,23 +1,24 @@
+import pytest
+
 from intake.scope import ScopeManifest, ScopeValidator
 
 
+@pytest.mark.unit
 def test_domain_scope_allows_exact_and_subdomain() -> None:
-    validator = ScopeValidator(
-        ScopeManifest(engagement_id="eng-1", domains=["example.test"])
-    )
+    validator = ScopeValidator(ScopeManifest(engagement_id="eng-1", domains=["example.test"]))
 
     assert validator.target_allowed("example.test")
     assert validator.target_allowed("https://api.example.test/v1")
 
 
+@pytest.mark.unit
 def test_domain_scope_rejects_suffix_confusion() -> None:
-    validator = ScopeValidator(
-        ScopeManifest(engagement_id="eng-1", domains=["example.test"])
-    )
+    validator = ScopeValidator(ScopeManifest(engagement_id="eng-1", domains=["example.test"]))
 
     assert not validator.target_allowed("badexample.test")
 
 
+@pytest.mark.unit
 def test_cidr_scope_allows_address_inside_network() -> None:
     validator = ScopeValidator(ScopeManifest(engagement_id="eng-1", cidrs=["192.0.2.0/28"]))
 
@@ -25,6 +26,7 @@ def test_cidr_scope_allows_address_inside_network() -> None:
     assert not validator.target_allowed("198.51.100.5")
 
 
+@pytest.mark.unit
 def test_operation_denied_takes_precedence() -> None:
     validator = ScopeValidator(
         ScopeManifest(
