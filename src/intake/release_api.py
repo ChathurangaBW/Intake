@@ -2,13 +2,17 @@ from __future__ import annotations
 
 from collections.abc import Generator
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from intake.auth import principal_from_request
+from intake.config import settings
 from intake.db import get_session
 from intake.jobs import JobService
 from intake.lifecycle import LifecycleService
+from intake.models import Artifact
 from intake.release_schemas import (
     EvidenceIntegrityOut,
     FindingUpdate,
@@ -16,8 +20,9 @@ from intake.release_schemas import (
     JobOut,
     job_out,
 )
-from intake.runtime_schemas import FindingOut, finding_out
-from intake.services import IntakeError, NotFoundError
+from intake.runtime_schemas import ArtifactOut, FindingOut, artifact_out, finding_out
+from intake.services import IntakeError, IntakeService, NotFoundError
+from intake.storage import sha256_bytes
 
 router = APIRouter()
 
@@ -34,12 +39,88 @@ def lifecycle_service_dep(session: Session = Depends(session_dep)) -> LifecycleS
     return LifecycleService(session)
 
 
+def intake_service_dep(session: Session = Depends(session_dep)) -> IntakeService:
+    return IntakeService(session)
+
+
 def _http_error(error: Exception) -> HTTPException:
     if isinstance(error, NotFoundError):
         return HTTPException(status_code=404, detail=str(error))
     if isinstance(error, IntakeError):
         return HTTPException(status_code=400, detail=str(error))
     return HTTPException(status_code=500, detail="internal error")
+
+
+def _find_artifact(service: IntakeService, engagement_id: str, digest: str) -> Artifact | None:
+    stmt = (
+        select(Artifact)
+        .where(Artifact.engagement_id == engagement_id, Artifact.sha256 == digest)
+        .limit(1)
+    )
+    return service.session.scalar(stmt)
+
+
+@router.post(
+    "/engagements/{engagement_id}/artifacts",
+    response_model=ArtifactOut,
+    status_code=status.HTTP_201_CREATED,
+    tags=["artifacts"],
+    include_in_schema=False,
+)
+async def upload_artifact_idempotent(
+    engagement_id: str,
+    request: Request,
+    file: UploadFile = File(...),
+    service: IntakeService = Depends(intake_service_dep),
+) -> ArtifactOut:
+    """Runtime override providing idempotent, race-safe artifact ingestion."""
+    principal = principal_from_request(request)
+    data = await file.read(settings.maximum_upload_bytes + 1)
+    if len(data) > settings.maximum_upload_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail="artifact exceeds configured upload limit",
+        )
+
+    digest = sha256_bytes(data)
+    existing = _find_artifact(service, engagement_id, digest)
+    if existing is not None:
+        service.audit(
+            actor=principal.key_id,
+            action="artifact.reuse",
+            subject=existing.id,
+            outcome="success",
+            metadata={"engagement_id": engagement_id, "sha256": digest},
+        )
+        service.session.commit()
+        return artifact_out(existing)
+
+    try:
+        row = service.ingest_artifact_bytes(
+            engagement_id=engagement_id,
+            data=data,
+            media_type=file.content_type or "application/octet-stream",
+            source="api-upload",
+            metadata={"filename": file.filename},
+            actor=principal.key_id,
+        )
+        return artifact_out(row)
+    except IntegrityError:
+        # A concurrent request may have inserted the same content after the
+        # initial lookup. The unique constraint is the final authority.
+        service.session.rollback()
+        existing = _find_artifact(service, engagement_id, digest)
+        if existing is None:
+            raise
+        service.audit(
+            actor=principal.key_id,
+            action="artifact.reuse",
+            subject=existing.id,
+            outcome="race_deduplicated",
+            metadata={"engagement_id": engagement_id, "sha256": digest},
+        )
+        service.session.commit()
+        return artifact_out(existing)
 
 
 @router.post(
