@@ -36,6 +36,7 @@ jobs:
           test -f docs/PACKAGING.md
           test -f docs/CONTAINER.md
           test -f docs/RELEASE.md
+          test -f docs/BADGES.md
           test -f docs/QA.md
           test -f docs/OPERATIONS.md
           test -f docs/THREAT_MODEL.md
