@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Generator
 
-from fastapi import Depends, FastAPI, HTTPException, Response, status
+from fastapi import Depends, FastAPI, File, HTTPException, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from intake.db import get_session
@@ -108,6 +108,27 @@ def add_target(
 def list_targets(engagement_id: str, service: IntakeService = Depends(service_dep)) -> list[TargetOut]:
     try:
         return [target_out(row) for row in service.list_targets(engagement_id)]
+    except Exception as error:  # noqa: BLE001
+        raise handle_error(error) from error
+
+
+@app.post("/engagements/{engagement_id}/artifacts", response_model=ArtifactOut, status_code=status.HTTP_201_CREATED)
+async def upload_artifact(
+    engagement_id: str,
+    file: UploadFile = File(...),
+    service: IntakeService = Depends(service_dep),
+) -> ArtifactOut:
+    try:
+        data = await file.read()
+        media_type = file.content_type or "application/octet-stream"
+        row = service.ingest_artifact_bytes(
+            engagement_id=engagement_id,
+            data=data,
+            media_type=media_type,
+            source="api-upload",
+            metadata={"filename": file.filename},
+        )
+        return artifact_out(row)
     except Exception as error:  # noqa: BLE001
         raise handle_error(error) from error
 
