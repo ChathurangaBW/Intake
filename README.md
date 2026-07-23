@@ -25,7 +25,7 @@ Intake is now a runnable local application, not just an architecture scaffold. I
 - Optional fixed-argument Ghidra/Rizin execution path when the operator enables external tools
 - Markdown report rendering
 - Docker Compose development stack
-- CI workflow and tests
+- CI workflow, QA markers, API contract tests, and smoke workflow
 
 ## Guardrails
 
@@ -197,6 +197,28 @@ Render report:
 curl -s http://127.0.0.1:8000/engagements/eng-demo/report.md
 ```
 
+## QA workflow
+
+Fast checks:
+
+```bash
+make check
+```
+
+Full local smoke check against a running app:
+
+```bash
+make smoke
+```
+
+Combined QA gate:
+
+```bash
+make qa
+```
+
+QA coverage is documented in [`docs/QA.md`](docs/QA.md). The CI workflow runs linting, unit tests, API contract tests, and Docker image build validation.
+
 ## Enabling real Ghidra/Rizin execution
 
 By default, Intake uses its safe built-in metadata and string extraction worker. To use installed Ghidra/Rizin binaries, enable fixed-argument external static tools:
@@ -228,7 +250,7 @@ src/intake/orchestration/    Workflow state-machine skeleton
 migrations/                  Alembic migrations
 policies/                    OPA/Rego policy
 examples/                    Example engagement manifest
-docs/                        Architecture, operations, threat model, roadmap
+docs/                        Architecture, operations, threat model, roadmap, QA
 ```
 
 ## Make targets
@@ -239,6 +261,10 @@ make dev-up
 make migrate
 make api
 make test
+make test-unit
+make test-contract
+make smoke
+make qa
 make lint
 make check
 ```
