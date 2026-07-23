@@ -22,6 +22,8 @@ from intake.models import (
 from intake.policy import PolicyClient
 from intake.schemas import PolicyDecision, ToolCallDecision, ToolCallRequest
 from intake.storage import EvidenceStore
+from intake.tool_runtime import build_default_registry
+from intake.tools.base import ToolResult
 
 
 class IntakeError(RuntimeError):
@@ -45,13 +47,7 @@ class ToolCallResult:
 
 
 class IntakeService:
-    """Runtime service layer for the Intake API and CLI.
-
-    API and CLI handlers call this service with typed data. The service persists
-    state, enforces basic scope checks, calls OPA, and records outcomes. The S3
-    evidence client is initialized lazily so DB-only commands and unit tests do
-    not need a running object store.
-    """
+    """Runtime service layer for the Intake API and CLI."""
 
     def __init__(
         self,
@@ -216,6 +212,25 @@ class IntakeService:
         self.get_engagement(engagement_id)
         stmt = select(ToolCall).where(ToolCall.engagement_id == engagement_id).order_by(ToolCall.created_at.desc())
         return list(self.session.scalars(stmt))
+
+    async def execute_tool_call(self, tool_call_id: str) -> ToolResult:
+        tool_call = self.session.get(ToolCall, tool_call_id)
+        if tool_call is None:
+            raise NotFoundError(f"unknown tool call: {tool_call_id}")
+        if tool_call.status != "authorized":
+            raise IntakeError(f"tool call is not authorized: {tool_call.status}")
+        request_json = dict(tool_call.request_json)
+        request_json.setdefault("arguments", {})
+        request_json["arguments"] = dict(request_json["arguments"])
+        request_json["arguments"]["tool_call_id"] = tool_call.id
+        request = ToolCallRequest.model_validate(request_json)
+
+        registry = build_default_registry(self.session)
+        tool = registry.get(request.tool, request.operation)
+        result = await tool.run(request.arguments)
+        tool_call.status = "completed" if result.status == "completed" else result.status
+        self.session.commit()
+        return result
 
     def decide_approval(self, approval_id: str, *, approved: bool, decided_by: str, reason: str | None = None) -> Approval:
         approval = self.session.get(Approval, approval_id)
