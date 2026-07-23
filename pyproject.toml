@@ -47,5 +47,8 @@ packages = ["src/intake"]
 line-length = 100
 target-version = "py312"
 
+[tool.ruff.lint]
+ignore = ["E501"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
