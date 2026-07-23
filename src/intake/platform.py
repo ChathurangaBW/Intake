@@ -10,6 +10,7 @@ from uuid import uuid4
 import httpx
 from fastapi import APIRouter, FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 from sqlalchemy import text
 from starlette.middleware.trustedhost import TrustedHostMiddleware
@@ -21,6 +22,7 @@ from intake.storage import EvidenceStore
 
 logger = logging.getLogger("intake.access")
 REQUEST_ID_RE = re.compile(r"^[A-Za-z0-9._:-]{8,128}$")
+INLINE_EXECUTION_RE = re.compile(r"^/tool-calls/[^/]+/execute$")
 
 HTTP_REQUESTS = Counter(
     "intake_http_requests_total",
@@ -68,6 +70,21 @@ def install_platform(app: FastAPI) -> None:
     ) -> Response:
         request_id = _request_id(request)
         request.state.request_id = request_id
+
+        if (
+            request.method.upper() == "POST"
+            and INLINE_EXECUTION_RE.fullmatch(request.url.path)
+            and not settings.enable_inline_tool_execution
+        ):
+            return JSONResponse(
+                status_code=status.HTTP_409_CONFLICT,
+                content={
+                    "detail": "inline tool execution is disabled; enqueue the authorized tool call instead",
+                    "enqueue_endpoint": request.url.path.replace("/execute", "/enqueue"),
+                },
+                headers={"X-Request-ID": request_id},
+            )
+
         content_length = request.headers.get("content-length")
         if content_length:
             try:
@@ -75,7 +92,7 @@ def install_platform(app: FastAPI) -> None:
                     return Response(
                         content=json.dumps({"detail": "request body exceeds configured limit"}),
                         media_type="application/json",
-                        status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                        status_code=status.HTTP_413_CONTENT_TOO_LARGE,
                         headers={"X-Request-ID": request_id},
                     )
             except ValueError:
@@ -98,6 +115,7 @@ def install_platform(app: FastAPI) -> None:
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        response.headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none'; base-uri 'none'"
         response.headers["Cache-Control"] = "no-store"
 
         if settings.structured_logging:
@@ -153,7 +171,10 @@ def dependency_status() -> dict[str, dict[str, str | bool]]:
 @router.get("/health/dependencies", tags=["platform"])
 def dependencies() -> dict[str, object]:
     checks = dependency_status()
-    return {"status": "ok" if all(bool(item["ok"]) for item in checks.values()) else "degraded", "checks": checks}
+    return {
+        "status": "ok" if all(bool(item["ok"]) for item in checks.values()) else "degraded",
+        "checks": checks,
+    }
 
 
 @router.get("/health/ready", tags=["platform"])
