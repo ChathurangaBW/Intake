@@ -65,6 +65,13 @@ class ToolCallProposeOut(BaseModel):
     decision: ToolCallDecision
 
 
+class ToolExecutionOut(BaseModel):
+    status: str
+    summary: str
+    evidence_ids: list[str] = Field(default_factory=list)
+    data: dict[str, Any] = Field(default_factory=dict)
+
+
 class ApprovalDecision(BaseModel):
     approved: bool
     decided_by: str
