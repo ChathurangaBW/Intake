@@ -1,4 +1,4 @@
-.PHONY: install dev-up dev-down migrate api test test-unit test-contract lint format check smoke qa
+.PHONY: install dev-up dev-down migrate api worker test test-unit test-contract lint format security check smoke compose-smoke qa
 
 install:
 	pip install -e .[dev]
@@ -15,6 +15,9 @@ migrate:
 api:
 	uvicorn intake.api:app --reload --host 127.0.0.1 --port 8000
 
+worker:
+	intake-worker
+
 test:
 	pytest
 
@@ -30,9 +33,19 @@ lint:
 format:
 	ruff format .
 
+security:
+	bandit -q -r src/intake
+	pip-audit
+
 check: lint test-unit test-contract
 
 smoke:
 	bash scripts/smoke.sh
 
-qa: check smoke
+compose-smoke:
+	@set -eu; \
+		docker compose up -d --build; \
+		trap 'docker compose down -v' EXIT; \
+		bash scripts/smoke.sh
+
+qa: check security compose-smoke
