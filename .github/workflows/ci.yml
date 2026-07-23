@@ -33,14 +33,27 @@ jobs:
           code=$?
           tail -n 120 unit-tests.log
           exit "$code"
-      - name: Upload unit failure report
+      - name: Upload unit report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: unit-test-report
           path: unit-tests.log
       - name: Contract tests
-        run: pytest -q -m contract --tb=short
+        id: contract
+        shell: bash
+        run: |
+          set +e
+          pytest -q -m contract --tb=short > contract-tests.log 2>&1
+          code=$?
+          tail -n 160 contract-tests.log
+          exit "$code"
+      - name: Upload contract report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-test-report
+          path: contract-tests.log
       - name: Build Python distributions
         run: python -m build
       - name: Upload Python distributions
