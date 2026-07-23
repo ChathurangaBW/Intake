@@ -104,10 +104,28 @@ jobs:
           name: dependency-audit-report
           path: dependency-audit.log
 
+  container-security:
+    name: Container vulnerability scan
+    runs-on: ubuntu-latest
+    needs: qa
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build scan image
+        run: docker build -t intake:scan .
+      - name: Scan image for high and critical vulnerabilities
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: intake:scan
+          format: table
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'HIGH,CRITICAL'
+
   compose-smoke:
     name: Clean-stack migration and worker smoke
     runs-on: ubuntu-latest
-    needs: qa
+    needs: [qa, container-security]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
