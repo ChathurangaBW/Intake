@@ -1,6 +1,6 @@
 x-intake-environment: &intake-environment
   INTAKE_ENV: ${INTAKE_ENV:-development}
-  INTAKE_DATABASE_URL: postgresql://intake:intake@postgres:5432/intake
+  INTAKE_DATABASE_URL: postgresql+psycopg://intake:intake@postgres:5432/intake
   INTAKE_OBJECT_STORE_ENDPOINT: http://minio:9000
   INTAKE_OBJECT_STORE_BUCKET: intake-evidence
   INTAKE_OBJECT_STORE_ACCESS_KEY: intake
@@ -8,7 +8,7 @@ x-intake-environment: &intake-environment
   INTAKE_OPA_URL: http://opa:8181/v1/data/intake/decision
   INTAKE_OPA_HEALTH_URL: http://opa:8181/health
   INTAKE_API_KEY: ${INTAKE_API_KEY:-}
-  INTAKE_API_KEYS: '${INTAKE_API_KEYS_JSON:-{}}'
+  INTAKE_API_KEYS: "${INTAKE_API_KEYS_JSON:-{}}"
   INTAKE_ENABLE_WEB_UI: ${INTAKE_ENABLE_WEB_UI:-true}
   INTAKE_MAXIMUM_REQUEST_BYTES: ${INTAKE_MAXIMUM_REQUEST_BYTES:-16777216}
   INTAKE_MAXIMUM_UPLOAD_BYTES: ${INTAKE_MAXIMUM_UPLOAD_BYTES:-67108864}
