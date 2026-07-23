@@ -8,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from intake.api import app, service_dep
+from intake.release_api import intake_service_dep
 from intake.schemas import PolicyDecision, ToolCallDecision
 
 
@@ -48,6 +49,21 @@ class Row:
 
 
 class FakeService:
+    def __init__(self) -> None:
+        self.session = self
+
+    def scalar(self, _statement: Any) -> Any:
+        return None
+
+    def commit(self) -> None:
+        return None
+
+    def rollback(self) -> None:
+        return None
+
+    def audit(self, **_: Any) -> None:
+        return None
+
     def dashboard_stats(self) -> dict[str, int]:
         return {
             "engagements": 1,
@@ -155,7 +171,9 @@ class FakeService:
 
 @pytest.fixture(autouse=True)
 def override_service() -> None:
-    app.dependency_overrides[service_dep] = lambda: FakeService()
+    fake = FakeService()
+    app.dependency_overrides[service_dep] = lambda: fake
+    app.dependency_overrides[intake_service_dep] = lambda: fake
     yield
     app.dependency_overrides.clear()
 
@@ -181,7 +199,9 @@ def test_engagement_artifact_tool_and_report_contract() -> None:
     assert client.get("/tools/status").status_code == 200
     proposed = client.post("/tool-calls", json={"engagement_id": "eng-qa", "actor": "qa", "tool": "ghidra", "operation": "analyze", "risk": "read_only", "arguments": {}})
     assert proposed.status_code == 201
-    assert client.post("/tool-calls/tool-1/execute").json()["status"] == "completed"
+    blocked = client.post("/tool-calls/tool-1/execute")
+    assert blocked.status_code == 409
+    assert blocked.json()["enqueue_endpoint"] == "/tool-calls/tool-1/enqueue"
     assert client.get("/engagements/eng-qa/report.md").status_code == 200
 
 
