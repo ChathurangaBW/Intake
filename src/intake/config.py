@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     object_store_endpoint: str = "http://localhost:9000"
     object_store_bucket: str = "intake-evidence"
     object_store_access_key: str = "intake"
-    object_store_secret_key: str = "intake-secret"
+    object_store_secret_key: str = "intake-dev-password"
     object_store_region: str = "us-east-1"
     object_store_secure: bool = False
 
