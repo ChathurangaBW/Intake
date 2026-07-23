@@ -149,3 +149,15 @@ class ModelCall(Base, TimestampMixin):
     input_tokens: Mapped[int] = mapped_column(Integer, default=0)
     output_tokens: Mapped[int] = mapped_column(Integer, default=0)
     cost_usd_micros: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True, default=uuid_str)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+    actor: Mapped[str] = mapped_column(String(128), default="system")
+    action: Mapped[str] = mapped_column(String(128))
+    subject: Mapped[str] = mapped_column(String(255))
+    outcome: Mapped[str] = mapped_column(String(32))
+    metadata_: Mapped[dict[str, Any]] = mapped_column("metadata", JSONB, default=dict)
