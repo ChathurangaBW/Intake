@@ -44,6 +44,12 @@ services:
       INTAKE_OBJECT_STORE_ACCESS_KEY: intake
       INTAKE_OBJECT_STORE_SECRET_KEY: intake-dev-password
       INTAKE_OPA_URL: http://opa:8181/v1/data/intake/decision
+      INTAKE_API_KEY: ${INTAKE_API_KEY:-}
+      INTAKE_ENABLE_WEB_UI: ${INTAKE_ENABLE_WEB_UI:-true}
+      INTAKE_ENABLE_EXTERNAL_STATIC_TOOLS: ${INTAKE_ENABLE_EXTERNAL_STATIC_TOOLS:-false}
+      INTAKE_RIZIN_PATH: ${INTAKE_RIZIN_PATH:-rizin}
+      INTAKE_GHIDRA_ANALYZE_HEADLESS_PATH: ${INTAKE_GHIDRA_ANALYZE_HEADLESS_PATH:-analyzeHeadless}
+      INTAKE_GHIDRA_PROJECT_ROOT: /tmp/intake-ghidra
     ports:
       - "8000:8000"
     depends_on:
