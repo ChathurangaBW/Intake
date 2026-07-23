@@ -123,6 +123,31 @@ class IntakeService:
         stmt = select(Target).where(Target.engagement_id == engagement_id).order_by(Target.created_at)
         return list(self.session.scalars(stmt))
 
+    def _create_artifact_record(
+        self,
+        *,
+        engagement_id: str,
+        sha256: str,
+        media_type: str,
+        size_bytes: int,
+        storage_uri: str,
+        source: str,
+        metadata: dict[str, Any] | None = None,
+    ) -> Artifact:
+        artifact = Artifact(
+            engagement_id=engagement_id,
+            sha256=sha256,
+            media_type=media_type,
+            size_bytes=size_bytes,
+            storage_uri=storage_uri,
+            source=source,
+            metadata_=metadata or {},
+        )
+        self.session.add(artifact)
+        self.session.commit()
+        self.session.refresh(artifact)
+        return artifact
+
     def ingest_artifact(
         self,
         *,
@@ -134,19 +159,36 @@ class IntakeService:
     ) -> Artifact:
         self.get_engagement(engagement_id)
         stored = self.evidence_store.put_file(path, media_type=media_type)
-        artifact = Artifact(
+        return self._create_artifact_record(
             engagement_id=engagement_id,
             sha256=stored.sha256,
             media_type=media_type,
             size_bytes=stored.size_bytes,
             storage_uri=stored.storage_uri,
             source=source,
-            metadata_=metadata or {},
+            metadata=metadata,
         )
-        self.session.add(artifact)
-        self.session.commit()
-        self.session.refresh(artifact)
-        return artifact
+
+    def ingest_artifact_bytes(
+        self,
+        *,
+        engagement_id: str,
+        data: bytes,
+        media_type: str = "application/octet-stream",
+        source: str = "api-upload",
+        metadata: dict[str, Any] | None = None,
+    ) -> Artifact:
+        self.get_engagement(engagement_id)
+        stored = self.evidence_store.put_bytes(data, media_type=media_type)
+        return self._create_artifact_record(
+            engagement_id=engagement_id,
+            sha256=stored.sha256,
+            media_type=media_type,
+            size_bytes=stored.size_bytes,
+            storage_uri=stored.storage_uri,
+            source=source,
+            metadata=metadata,
+        )
 
     def get_artifact(self, artifact_id: str) -> Artifact:
         artifact = self.session.get(Artifact, artifact_id)
