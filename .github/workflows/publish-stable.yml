@@ -138,5 +138,4 @@ jobs:
             --repo "${GITHUB_REPOSITORY}" \
             --target "${GITHUB_SHA}" \
             --title "Intake ${VERSION}" \
-            --notes-file "${NOTES}" \
-            --generate-notes
+            --notes-file "${NOTES}"
