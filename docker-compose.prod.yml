@@ -1,0 +1,25 @@
+services:
+  api:
+    image: ghcr.io/chathurangabw/intake:main
+    build: null
+    restart: unless-stopped
+    environment:
+      INTAKE_ENV: production
+      INTAKE_ENABLE_WEB_UI: "true"
+      INTAKE_OBJECT_STORE_SECURE: "false"
+    ports:
+      - "127.0.0.1:8000:8000"
+
+  postgres:
+    restart: unless-stopped
+    ports: []
+
+  opa:
+    restart: unless-stopped
+    ports: []
+
+  minio:
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
