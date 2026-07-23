@@ -17,12 +17,14 @@ All notable changes to Intake will be documented in this file.
 - Non-root multi-stage container packaging
 - Container vulnerability scanning, SBOM generation, and provenance attestations
 - Python distribution verification and provenance attestations
+- Operations control-plane API and CLI for readiness diagnostics, metadata exports, audit NDJSON, and evidence inventory verification
 
 ### Changed
 
 - HTTP tool execution now uses the durable enqueue/worker path by default
 - Package and API versioning now share one version source
 - Release gates now include clean migrations, readiness, worker execution, and evidence verification
+- Operator handoff now includes deterministic engagement export and audit export paths
 
 ### Security boundary
 
