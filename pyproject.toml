@@ -20,6 +20,7 @@ dependencies = [
   "psycopg[binary]>=3.2",
   "pydantic>=2.8",
   "pydantic-settings>=2.4",
+  "python-multipart>=0.0.9",
   "pyyaml>=6.0",
   "sqlalchemy>=2.0",
   "typer>=0.12",
@@ -45,6 +46,9 @@ packages = ["src/intake"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+
+[tool.ruff.lint]
+ignore = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

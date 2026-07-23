@@ -50,7 +50,7 @@ def upgrade() -> None:
         sa.Column("metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=False, server_default="{}"),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
-        sa.UniqueConstraint("sha256", name="uq_artifact_sha256"),
+        sa.UniqueConstraint("engagement_id", "sha256", name="uq_artifact_engagement_sha256"),
     )
     op.create_index("ix_artifacts_sha256", "artifacts", ["sha256"])
     op.create_table(

@@ -1,37 +1,160 @@
 # Intake
 
-Intake is a policy-controlled security automation framework for authorized reverse engineering, evidence handling, and assessment workflows.
+Intake is a policy-controlled security automation app for authorized reverse engineering, evidence handling, and assessment workflows.
 
-The project is intentionally built around this rule:
+The project is built around this rule:
 
 > The model proposes. Policy decides. Isolated workers execute. Evidence proves. A human authorizes sensitive actions.
 
-## Current status
+## What works now
 
-Expanded framework foundation. This repository now includes the core architecture skeleton for a safe security-automation platform: schema-validated tool calls, OPA policy checks, persistence, evidence storage, worker contracts, reverse-engineering wrappers, and workflow scaffolding.
+This is no longer only an architecture scaffold. The repository includes a runnable API and CLI with:
 
-It is not yet a production pentest system. Dynamic execution, active network assessment, and any state-changing operation are intentionally gated behind policy and review paths.
+- FastAPI service
+- Typer operator CLI
+- PostgreSQL persistence through SQLAlchemy and Alembic
+- OPA/Rego policy decisions
+- MinIO/S3-compatible content-addressed evidence storage
+- Engagements, targets, artifacts, tool calls, approvals, evidence, and findings
+- API artifact upload and CLI artifact ingestion
+- Authorized tool-call execution path
+- Safe local static-analysis worker for metadata and strings extraction
+- Ghidra/Rizin tool contracts routed through the worker boundary
+- Markdown report rendering
+- Docker Compose development stack
+- CI workflow and tests
 
-## Core design
+## What is intentionally not included
 
-- **Scope-first execution**: every target, artifact, and operation must belong to an engagement manifest.
-- **Policy-gated tools**: tool calls pass through schema validation and OPA checks before execution.
-- **No unrestricted shell path**: tools are typed contracts, not arbitrary command strings.
-- **Isolated workers**: static analysis is designed for disposable containers; dynamic analysis should run in disposable VMs or microVMs.
-- **Evidence integrity**: artifacts and outputs are stored by SHA-256 content address and referenced by immutable IDs.
-- **Human approval gates**: dynamic execution, state-changing actions, and active network checks require approval.
-- **LLM cost control**: budgets cap turns, tool calls, subagent depth, and cost.
+Intake does **not** expose unrestricted shell execution, exploit automation, persistence, evasion, destructive actions, or unscopeable network activity. Dynamic execution and active network operations remain approval-gated design areas.
+
+## Quick start
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+The API starts on:
+
+```text
+http://127.0.0.1:8000
+```
+
+OpenAPI docs:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+The API container runs Alembic migrations on startup.
+
+## Local CLI setup
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .[dev,orchestration]
+docker compose up -d postgres opa minio
+alembic upgrade head
+intake doctor
+```
+
+## Example workflow
+
+Create an engagement:
+
+```bash
+intake engagement create eng-demo "Demo Authorized Assessment" --manifest examples/engagement.yaml
+```
+
+Add an authorized target:
+
+```bash
+intake target add eng-demo app.authorized-example.test domain
+```
+
+Ingest a local artifact:
+
+```bash
+intake artifact ingest eng-demo ./sample.bin
+```
+
+Propose a read-only static analysis tool call:
+
+```bash
+intake tool propose eng-demo analyst ghidra analyze read_only '{"artifact_id":"<artifact-id>","profile":"quick"}'
+```
+
+Execute it after the policy marks it `authorized`:
+
+```bash
+intake tool execute <tool-call-id>
+```
+
+Create a finding:
+
+```bash
+intake finding create eng-demo "Finding title" "Evidence-backed description" informational
+```
+
+Render a report:
+
+```bash
+intake finding report eng-demo --output report.md
+```
+
+## API workflow
+
+Create an engagement:
+
+```bash
+curl -s http://127.0.0.1:8000/engagements \
+  -H 'content-type: application/json' \
+  -d '{"engagement_id":"eng-demo","name":"Demo Authorized Assessment"}'
+```
+
+Upload an artifact:
+
+```bash
+curl -s http://127.0.0.1:8000/engagements/eng-demo/artifacts \
+  -F 'file=@./sample.bin;type=application/octet-stream'
+```
+
+Propose a tool call:
+
+```bash
+curl -s http://127.0.0.1:8000/tool-calls \
+  -H 'content-type: application/json' \
+  -d '{"engagement_id":"eng-demo","actor":"analyst","tool":"ghidra","operation":"analyze","risk":"read_only","arguments":{"artifact_id":"<artifact-id>","profile":"quick"}}'
+```
+
+Execute an authorized tool call:
+
+```bash
+curl -s -X POST http://127.0.0.1:8000/tool-calls/<tool-call-id>/execute
+```
+
+Render report:
+
+```bash
+curl -s http://127.0.0.1:8000/engagements/eng-demo/report.md
+```
 
 ## Repository layout
 
 ```text
 src/intake/                  Python package
+src/intake/api.py            FastAPI app
+src/intake/cli.py            Operator CLI
+src/intake/services.py       Runtime application service layer
 src/intake/models.py         SQLAlchemy persistence models
 src/intake/storage.py        Content-addressed evidence store
+src/intake/tool_runtime.py   Default constrained tool registry
 src/intake/tool_broker.py    Policy-gated tool execution path
 src/intake/scope.py          Engagement scope validation
 src/intake/tools/            Typed tool wrappers
-src/intake/workers/          Static/dynamic worker contracts
+src/intake/workers/          Static/dynamic worker contracts and local static worker
 src/intake/orchestration/    Workflow state-machine skeleton
 migrations/                  Alembic migrations
 policies/                    OPA/Rego policy
@@ -39,27 +162,17 @@ examples/                    Example engagement manifest
 docs/                        Architecture, operations, threat model, roadmap
 ```
 
-## Development
+## Make targets
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .[dev,orchestration]
-docker compose up -d
-alembic upgrade head
-pytest
-intake --help
+make install
+make dev-up
+make migrate
+make api
+make test
+make lint
+make check
 ```
-
-## Intended build sequence
-
-1. Finish database persistence services around the SQLAlchemy models.
-2. Implement object-store evidence write/read flows in API endpoints.
-3. Add OPA policy tests and CI.
-4. Implement static worker backend for Ghidra/Rizin in disposable containers.
-5. Add LangGraph nodes around the existing workflow state machine.
-6. Add approval API and operator CLI commands.
-7. Add dynamic-analysis VM backend only after isolation tests pass.
 
 ## Safety boundary
 
