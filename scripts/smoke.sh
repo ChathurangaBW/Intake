@@ -27,7 +27,7 @@ json_request "${BASE_URL}/engagements" \
 
 printf 'Uploading artifact...\n'
 SAMPLE_FILE="$(mktemp)"
-printf 'hello qa smoke sample' > "${SAMPLE_FILE}"
+printf 'hello qa smoke sample %s' "$(date +%s%N)" > "${SAMPLE_FILE}"
 ARTIFACT_JSON="$(curl -fsS "${AUTH_HEADER[@]}" "${BASE_URL}/engagements/qa-smoke/artifacts" -F "file=@${SAMPLE_FILE};type=application/octet-stream")"
 ARTIFACT_ID="$(python - <<'PY' "${ARTIFACT_JSON}"
 import json, sys
