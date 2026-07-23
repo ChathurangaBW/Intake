@@ -2,13 +2,20 @@
 
 ## Supported versions
 
-The current supported development line is `main` until versioned releases are published.
+| Version | Supported |
+|---|---|
+| `1.x` | Yes |
+| `<1.0` | No |
+
+Security fixes are applied to the latest `1.x` release and the `main` development branch.
 
 ## Reporting a vulnerability
 
 Open a private security advisory in GitHub if available, or contact the repository owner directly.
 
-Do not open public issues for sensitive vulnerabilities, secret leaks, or bypasses of the policy boundary.
+Do not open public issues for sensitive vulnerabilities, secret leaks, authorization bypasses, worker-isolation failures, evidence-integrity failures, or bypasses of the policy boundary.
+
+A useful report should include the affected version, deployment configuration, reproduction steps, impact, and any proposed mitigation. Do not include customer artifacts, credentials, or confidential engagement evidence.
 
 ## Product security boundary
 
