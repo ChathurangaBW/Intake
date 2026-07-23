@@ -87,7 +87,7 @@ jobs:
         with:
           subject-path: dist/*
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
         if: steps.existing.outputs.exists != 'true'
 
       - name: Login to GHCR
