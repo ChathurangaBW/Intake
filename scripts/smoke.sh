@@ -97,4 +97,4 @@ request "${BASE_URL}/stats" >/dev/null
 request "${BASE_URL}/jobs?limit=10" >/dev/null
 request "${BASE_URL}/engagements/qa-smoke/report.md" >/dev/null
 
-printf 'Release smoke test passed.\n'
+printf 'Smoke test passed: release workflow.\n'
