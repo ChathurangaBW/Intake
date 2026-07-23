@@ -101,7 +101,7 @@ jobs:
       - name: Build and publish stable container
         if: steps.existing.outputs.exists != 'true'
         id: image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
