@@ -1,0 +1,35 @@
+engagement_id: eng-local-demo
+name: Local authorized analysis demo
+classification: internal
+
+scope:
+  domains:
+    - app.authorized-example.test
+  cidrs:
+    - 192.0.2.0/28
+  artifacts:
+    - sample-sha256-placeholder
+
+allowed_operations:
+  - artifact.identify
+  - artifact.extract_metadata
+  - ghidra.analyze
+  - rizin.analyze
+  - report.render
+
+approval_required:
+  - dynamic.execute
+  - network.active_check
+  - state.change
+
+denied_operations:
+  - unrestricted_shell
+  - destructive_action
+  - persistence
+  - third_party_targeting
+
+budgets:
+  maximum_agent_turns: 12
+  maximum_tool_calls: 30
+  maximum_subagent_depth: 1
+  maximum_cost_usd: 2.00
