@@ -1,4 +1,4 @@
-.PHONY: install dev-up dev-down prod-up prod-down migrate api worker demo test test-unit test-contract lint format security check smoke compose-smoke qa release-check
+.PHONY: install dev-up dev-down prod-up prod-down migrate api worker demo ops-readiness ops-export-audit ops-verify-evidence test test-unit test-contract lint format security check smoke compose-smoke qa release-check
 
 install:
 	pip install -e .[dev]
@@ -26,6 +26,15 @@ worker:
 
 demo:
 	python scripts/seed_demo.py
+
+ops-readiness:
+	intake ops readiness
+
+ops-export-audit:
+	intake ops export-audit --output intake-audit.ndjson
+
+ops-verify-evidence:
+	intake ops verify-evidence
 
 test:
 	pytest
