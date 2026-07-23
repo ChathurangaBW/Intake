@@ -13,5 +13,6 @@ Start with [`index.html`](index.html), then use these focused pages:
 - [`PACKAGING.md`](PACKAGING.md) — GHCR package publishing
 - [`CONTAINER.md`](CONTAINER.md) — Compose and published-container usage
 - [`RELEASE.md`](RELEASE.md) — release workflow and tagging process
+- [`BADGES.md`](BADGES.md) — README badge behavior
 
 The Pages workflow publishes this directory when GitHub Pages is configured to use GitHub Actions.
