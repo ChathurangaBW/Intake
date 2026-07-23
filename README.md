@@ -16,6 +16,7 @@ This is no longer only an architecture scaffold. The repository includes a runna
 - OPA/Rego policy decisions
 - MinIO/S3-compatible content-addressed evidence storage
 - Engagements, targets, artifacts, tool calls, approvals, evidence, and findings
+- API artifact upload and CLI artifact ingestion
 - Authorized tool-call execution path
 - Safe local static-analysis worker for metadata and strings extraction
 - Ghidra/Rizin tool contracts routed through the worker boundary
@@ -111,6 +112,13 @@ Create an engagement:
 curl -s http://127.0.0.1:8000/engagements \
   -H 'content-type: application/json' \
   -d '{"engagement_id":"eng-demo","name":"Demo Authorized Assessment"}'
+```
+
+Upload an artifact:
+
+```bash
+curl -s http://127.0.0.1:8000/engagements/eng-demo/artifacts \
+  -F 'file=@./sample.bin;type=application/octet-stream'
 ```
 
 Propose a tool call:
