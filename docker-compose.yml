@@ -9,6 +9,11 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U intake"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   opa:
     image: openpolicyagent/opa:latest
@@ -29,6 +34,30 @@ services:
       - "9001:9001"
     volumes:
       - minio:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    environment:
+      INTAKE_DATABASE_URL: postgresql://intake:intake@postgres:5432/intake
+      INTAKE_OBJECT_STORE_ENDPOINT: http://minio:9000
+      INTAKE_OBJECT_STORE_BUCKET: intake-evidence
+      INTAKE_OBJECT_STORE_ACCESS_KEY: intake
+      INTAKE_OBJECT_STORE_SECRET_KEY: intake-dev-password
+      INTAKE_OPA_URL: http://opa:8181/v1/data/intake/decision
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      opa:
+        condition: service_started
 
 volumes:
   pgdata:
