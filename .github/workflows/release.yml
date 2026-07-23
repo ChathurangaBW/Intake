@@ -8,10 +8,12 @@ on:
 permissions:
   contents: write
   packages: write
+  id-token: write
+  attestations: write
 
 jobs:
   build:
-    name: Build release artifacts
+    name: Build, verify, attest, and release artifacts
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,10 +25,18 @@ jobs:
       - name: Install build tooling
         run: |
           python -m pip install --upgrade pip
-          python -m pip install build
+          python -m pip install build twine
 
       - name: Build Python package artifacts
         run: python -m build
+
+      - name: Verify Python package metadata
+        run: python -m twine check dist/*
+
+      - name: Attest Python package provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/*
 
       - name: Upload distribution artifact
         uses: actions/upload-artifact@v4
@@ -39,4 +49,5 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*
+          body_path: docs/RELEASE_NOTES_1.0.0.md
           generate_release_notes: true
