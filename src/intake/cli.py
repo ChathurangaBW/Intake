@@ -19,7 +19,7 @@ app = typer.Typer(help="Intake security automation framework")
 engagement_app = typer.Typer(help="Create and inspect engagements")
 target_app = typer.Typer(help="Manage scoped targets")
 artifact_app = typer.Typer(help="Ingest and list artifacts")
-tool_app = typer.Typer(help="Propose and approve policy-gated tool calls")
+tool_app = typer.Typer(help="Propose, approve, and execute policy-gated tool calls")
 finding_app = typer.Typer(help="Record and report findings")
 
 app.add_typer(engagement_app, name="engagement")
@@ -187,6 +187,19 @@ def propose_tool_call(
                     "decision": result.decision.model_dump(mode="json"),
                 }
             )
+
+    asyncio.run(_run())
+
+
+@tool_app.command("execute")
+def execute_tool_call(tool_call_id: str) -> None:
+    """Execute an already-authorized tool call through the constrained runtime."""
+
+    async def _run() -> None:
+        with SessionLocal() as session:
+            service = IntakeService(session)
+            result = await service.execute_tool_call(tool_call_id)
+            _echo_json(result)
 
     asyncio.run(_run())
 
