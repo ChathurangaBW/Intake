@@ -55,7 +55,7 @@ def render_markdown_report(
         )
 
     if not findings:
-        lines.extend(["## Findings", "", "No findings have been recorded.", ""])
+        lines.extend(["## Findings", "", "No verified findings have been recorded.", ""])
         return "\n".join(lines)
 
     lines.extend(["## Findings", ""])
