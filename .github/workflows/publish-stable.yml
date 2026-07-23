@@ -83,7 +83,7 @@ jobs:
 
       - name: Attest Python distribution provenance
         if: steps.existing.outputs.exists != 'true'
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-path: dist/*
 
@@ -120,7 +120,7 @@ jobs:
 
       - name: Attest container provenance
         if: steps.existing.outputs.exists != 'true'
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v4
         with:
           subject-name: ghcr.io/chathurangabw/intake
           subject-digest: ${{ steps.image.outputs.digest }}
