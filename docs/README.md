@@ -10,6 +10,7 @@ Start with [`index.html`](index.html), then use these focused pages:
 - [`FINAL_PRODUCT_CHECKLIST.md`](FINAL_PRODUCT_CHECKLIST.md) — final product readiness checklist
 - [`DEMO.md`](DEMO.md) — demo workflow and seed data
 - [`SDK.md`](SDK.md) — Python SDK usage
+- [`OPERATIONS_CONTROL_PLANE.md`](OPERATIONS_CONTROL_PLANE.md) — diagnostics, exports, audit NDJSON, and evidence verification
 - [`QA.md`](QA.md) — QA plan and acceptance checklist
 - [`OPERATIONS.md`](OPERATIONS.md) — local run and operations guide
 - [`THREAT_MODEL.md`](THREAT_MODEL.md) — threat model and safety model

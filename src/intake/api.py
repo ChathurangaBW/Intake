@@ -10,6 +10,7 @@ from intake import __version__
 from intake.auth import install_api_key_auth, principal_from_request
 from intake.config import settings
 from intake.db import get_session
+from intake.ops_api import router as ops_router
 from intake.platform import install_platform, router as platform_router
 from intake.release_api import router as release_router
 from intake.reporting import render_markdown_report
@@ -54,6 +55,7 @@ install_api_key_auth(app)
 install_platform(app)
 app.include_router(platform_router)
 app.include_router(release_router)
+app.include_router(ops_router)
 
 
 def session_dep() -> Generator[Session, None, None]:

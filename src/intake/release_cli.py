@@ -10,11 +10,14 @@ from intake.cli import _echo_json, app, evidence_app, finding_app
 from intake.db import SessionLocal
 from intake.jobs import JobService
 from intake.lifecycle import LifecycleService
+from intake.ops import audit_ndjson, engagement_export_bundle, readiness_report, verify_evidence_inventory
 from intake.release_schemas import FindingUpdate, job_out
 from intake.runtime_schemas import finding_out
 
 job_app = typer.Typer(help="Manage durable execution jobs")
+ops_app = typer.Typer(help="Operational diagnostics, exports, and integrity checks")
 app.add_typer(job_app, name="job")
+app.add_typer(ops_app, name="ops")
 
 
 @app.command("init")
@@ -62,6 +65,44 @@ def doctor_full() -> None:
         except Exception as error:  # noqa: BLE001 - diagnostic command
             result[name] = f"missing or failed: {error}"
     typer.echo(json.dumps(result, indent=2))
+
+
+@ops_app.command("readiness")
+def ops_readiness() -> None:
+    """Print database-backed operational readiness diagnostics."""
+    with SessionLocal() as session:
+        _echo_json(readiness_report(session))
+
+
+@ops_app.command("export-engagement")
+def ops_export_engagement(
+    engagement_id: str,
+    output: Path = typer.Option(Path("intake-engagement-export.json"), "--output", "-o"),
+) -> None:
+    """Export an engagement metadata bundle without raw evidence bytes."""
+    with SessionLocal() as session:
+        bundle = engagement_export_bundle(session, engagement_id)
+    output.write_text(json.dumps(bundle, indent=2, sort_keys=True, default=str), encoding="utf-8")
+    typer.echo(f"wrote {output}")
+
+
+@ops_app.command("export-audit")
+def ops_export_audit(
+    output: Path = typer.Option(Path("intake-audit.ndjson"), "--output", "-o"),
+    limit: int = typer.Option(1000, min=1, max=10000),
+) -> None:
+    """Export recent audit records as canonical NDJSON."""
+    with SessionLocal() as session:
+        body = audit_ndjson(session, limit=limit)
+    output.write_text(body, encoding="utf-8")
+    typer.echo(f"wrote {output}")
+
+
+@ops_app.command("verify-evidence")
+def ops_verify_evidence(limit: int = typer.Option(500, min=1, max=5000)) -> None:
+    """Verify recent stored evidence digest and size metadata."""
+    with SessionLocal() as session:
+        _echo_json(verify_evidence_inventory(session, limit=limit))
 
 
 @job_app.command("enqueue")
