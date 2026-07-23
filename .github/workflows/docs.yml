@@ -23,7 +23,7 @@ jobs:
     name: Validate documentation structure
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Check required docs files
         run: |
           test -f README.md
