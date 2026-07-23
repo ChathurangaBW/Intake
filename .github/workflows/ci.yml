@@ -25,7 +25,20 @@ jobs:
       - name: Ruff
         run: ruff check .
       - name: Unit tests
-        run: pytest -q -m "unit or not (contract or integration or smoke)" --cov=intake --cov-report=term-missing --tb=short
+        id: unit
+        shell: bash
+        run: |
+          set +e
+          pytest -q -m "unit or not (contract or integration or smoke)" --cov=intake --cov-report=term-missing --tb=short > unit-tests.log 2>&1
+          code=$?
+          tail -n 120 unit-tests.log
+          exit "$code"
+      - name: Upload unit failure report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-report
+          path: unit-tests.log
       - name: Contract tests
         run: pytest -q -m contract --tb=short
       - name: Build Python distributions
@@ -50,9 +63,33 @@ jobs:
           python -m pip install --quiet --upgrade pip
           pip install --quiet -e .[dev]
       - name: Bandit
-        run: bandit -q -r src/intake
+        shell: bash
+        run: |
+          set +e
+          bandit -q -r src/intake > bandit.log 2>&1
+          code=$?
+          cat bandit.log
+          exit "$code"
+      - name: Upload Bandit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: bandit.log
       - name: Dependency audit
-        run: pip-audit
+        shell: bash
+        run: |
+          set +e
+          pip-audit > dependency-audit.log 2>&1
+          code=$?
+          cat dependency-audit.log
+          exit "$code"
+      - name: Upload dependency audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-audit-report
+          path: dependency-audit.log
 
   compose-smoke:
     name: Clean-stack migration and worker smoke
