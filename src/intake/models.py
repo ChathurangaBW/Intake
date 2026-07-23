@@ -53,7 +53,7 @@ class Target(Base, TimestampMixin):
 
 class Artifact(Base, TimestampMixin):
     __tablename__ = "artifacts"
-    __table_args__ = (UniqueConstraint("sha256", name="uq_artifact_sha256"),)
+    __table_args__ = (UniqueConstraint("engagement_id", "sha256", name="uq_artifact_engagement_sha256"),)
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True, default=uuid_str)
     engagement_id: Mapped[str] = mapped_column(ForeignKey("engagements.id", ondelete="CASCADE"))
